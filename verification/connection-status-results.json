@@ -1,0 +1,27 @@
+{
+  "version": "0.3.1",
+  "date": "2026-11-15",
+  "jvm": {
+    "tests": 17,
+    "failures": 0,
+    "skipped": 0,
+    "production_c_interop_tests": 4
+  },
+  "instrumented": {
+    "tests": 6,
+    "failures": 0,
+    "design_systems": [
+      "Miuix",
+      "Material 3"
+    ],
+    "radio": "test peer; no physical radio validation"
+  },
+  "lint": {
+    "Warning": 13
+  },
+  "apk": {
+    "path": "app/build/outputs/apk/debug/app-debug.apk",
+    "bytes": 41460823,
+    "sha256": "6cce1a31072e188db1345ce8f2c44595f18a128c0cecd6608e8073d1df63f3ce"
+  }
+}
