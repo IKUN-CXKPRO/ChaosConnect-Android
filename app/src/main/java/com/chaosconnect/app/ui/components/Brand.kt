@@ -33,7 +33,7 @@ fun Logo(modifier: Modifier = Modifier) {
     Image(painterResource(R.drawable.chaos_logo), "ChaosConnect 标志", modifier.clip(RoundedCornerShape(22.dp)).background(Color.White))
 }
 
-enum class Glyph { HOME, DEVICES, PROFILE, TERMINAL, FILES, SETTINGS, BACK, NEXT, PLUS, CONNECT, INFO, PALETTE, CHECK, MOON, SHIELD }
+enum class Glyph { HOME, DEVICES, PROFILE, TERMINAL, FEATURES, FILES, SETTINGS, BACK, NEXT, PLUS, CONNECT, INFO, PALETTE, CHECK, MOON, SHIELD }
 
 @Composable
 fun GlyphIcon(glyph: Glyph, modifier: Modifier = Modifier, color: Color = LocalShellColors.current.text) {
@@ -49,6 +49,7 @@ fun GlyphIcon(glyph: Glyph, modifier: Modifier = Modifier, color: Color = LocalS
                 Glyph.HOME -> { path(3f to 10f,12f to 3f,21f to 10f); path(5f to 9f,5f to 21f,10f to 21f,10f to 14f,14f to 14f,14f to 21f,19f to 21f,19f to 9f) }
                 Glyph.DEVICES -> { drawRoundRect(color,Offset(7f,5f),androidx.compose.ui.geometry.Size(10f,14f),androidx.compose.ui.geometry.CornerRadius(3f),style=stroke); line(10f,1f,14f,1f);line(10f,23f,14f,23f);drawCircle(color,1.2f,Offset(12f,12f)) }
                 Glyph.PROFILE -> { drawCircle(color,4f,Offset(12f,7f),style=stroke);drawArc(color,180f,180f,false,Offset(4f,14f),androidx.compose.ui.geometry.Size(16f,14f),style=stroke) }
+                Glyph.FEATURES -> {for(x in listOf(4f,14f))for(y in listOf(4f,14f))path(x to y,(x+6) to y,(x+6) to (y+6),x to (y+6),close=true)}
                 Glyph.TERMINAL -> {path(5f to 7f,10f to 12f,5f to 17f);line(12f,17f,20f,17f)}
                 Glyph.FILES -> path(3f to 7f,3f to 20f,21f to 20f,21f to 7f,12f to 7f,10f to 4f,3f to 4f,3f to 7f)
                 Glyph.SETTINGS -> { drawCircle(color,7f,Offset(12f,12f),style=stroke);drawCircle(color,2.5f,Offset(12f,12f),style=stroke);for(i in 0..7){val a=i*Math.PI/4;line((12+8*kotlin.math.cos(a)).toFloat(),(12+8*kotlin.math.sin(a)).toFloat(),(12+10*kotlin.math.cos(a)).toFloat(),(12+10*kotlin.math.sin(a)).toFloat())} }

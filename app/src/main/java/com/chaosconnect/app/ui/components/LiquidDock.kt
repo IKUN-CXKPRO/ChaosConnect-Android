@@ -2,6 +2,8 @@ package com.chaosconnect.app.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.testTag
@@ -16,7 +18,7 @@ fun LiquidDock(settings: AppSettings, selected: Int, backdrop: Backdrop, onSelec
     val c = LocalShellColors.current
     val haptic = LocalHapticFeedback.current
     FloatingBottomBar(
-        items = listOf("主页" to Glyph.HOME, "文件管理" to Glyph.FILES, "终端" to Glyph.TERMINAL, "连接" to Glyph.CONNECT, "我的" to Glyph.PROFILE),
+        items = listOf("主页" to Glyph.HOME, "连接" to Glyph.CONNECT, "功能列表" to Glyph.FEATURES, "我的" to Glyph.PROFILE),
         selectedIndex = { selected },
         onSelected = {
             if(settings.haptics) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -31,7 +33,7 @@ fun LiquidDock(settings: AppSettings, selected: Int, backdrop: Backdrop, onSelec
             else -> FloatingBottomBarMode.Blur
         },
         colors = FloatingBottomBarDefaults.colors(c.card, c.accent, c.text, c.accent),
-        iconContent = { item, _ -> GlyphIcon(item.second, color = LocalFloatingBottomBarContentColor.current) },
-        labelContent = { item, _ -> Label(item.first, 11, color = LocalFloatingBottomBarContentColor.current) },
+        iconContent = { item, _ -> GlyphIcon(item.second, Modifier.size(20.dp), color = LocalFloatingBottomBarContentColor.current) },
+        labelContent = { item, _ -> Label(item.first, 10, color = LocalFloatingBottomBarContentColor.current) },
     )
 }

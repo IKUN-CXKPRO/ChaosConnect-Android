@@ -63,7 +63,7 @@ data class SessionState(val phase:SessionPhase=SessionPhase.DISCONNECTED,val neg
 class DeviceStatusException(val code:Int,val opcode:Int):Exception(statusText(code))
 fun statusText(code:Int):String = listOf("成功","请求格式错误","路径不存在","没有权限","目标已存在","不是目录","是目录","空间不足","设备忙或目录非空","读写失败","CRC 校验失败","偏移顺序错误","不支持","超出大小限制","等待手环授权").getOrElse(code){"设备错误 $code"}
 
-/** One instance owns one link lease. Request IDs are never reused within it. */
+/** One instance owns one link lease. Only ECHO and read-only status IDs are reused. */
 class ChaosSession(private val transport:ChaosTransport,parentScope:CoroutineScope,
     private val prefix:Int=SecureRandom().nextInt(65535)+1,private val requestTimeoutMillis:Long=15_000) {
     init {require(prefix in 1..65535 && requestTimeoutMillis>0)}
@@ -72,6 +72,7 @@ class ChaosSession(private val transport:ChaosTransport,parentScope:CoroutineSco
     private val sendLock=Mutex()
     private var slots=Semaphore(8)
     private var nextId=1
+    private var nextPollingId=65528
     private var closed=false
     private var started=false
     private data class Pending(val opcode:Int,val reply:CompletableDeferred<CcnCodec.Frame>)
@@ -144,14 +145,26 @@ class ChaosSession(private val transport:ChaosTransport,parentScope:CoroutineSco
                         sendLock.withLock {
                             synchronized(lock) {
                                 checkWire(!closed && started,"CCN1 尚未连接")
-                                checkWire(nextId<=65535,"请求编号已用尽，请重新建立会话")
+                                val polling=opcode in listOf(Op.ECHO,Op.PING,Op.GET_ACCESS)
+                                checkWire(polling || nextId<65528,"请求编号已用尽，请重新建立会话")
                                 checkWire(state.value.phase==SessionPhase.CONNECTED || opcode in listOf(Op.HELLO,Op.PING,Op.GET_ACCESS,Op.DISCONNECT),"尚未完成握手")
                                 checkWire(state.value.permission?.waiting!=true || opcode in listOf(Op.PING,Op.SET_DEV,Op.GET_DEV,Op.GET_ACCESS,Op.DISCONNECT),"请先在手环完成授权或取消")
                                 state.value.access?.let {access ->
                                     if(opcode !in listOf(Op.HELLO,Op.PING,Op.GET_ACCESS,Op.DISCONNECT))
                                         checkWire(access.allows(MobilePermission.required(opcode,payload)),"手环未授予此操作权限")
                                 }
-                                id=nextId++;pending[id]=Pending(opcode,reply)
+                                // Eight reserved IDs match the maximum in-flight window.
+                                // ECHO and status polling have no operation side effects.
+                                // They cannot consume mutation IDs or match file replies.
+                                if(polling) {
+                                    for(attempt in 0 until 8) {
+                                        val candidate=nextPollingId
+                                        nextPollingId=if(candidate==65535)65528 else candidate+1
+                                        if(candidate !in pending){id=candidate;break}
+                                    }
+                                    checkWire(id!=0,"测速请求窗口已满")
+                                } else id=nextId++
+                                pending[id]=Pending(opcode,reply)
                             }
                             val frame=CcnCodec.encode(CcnCodec.Frame(0,opcode,0,id,payload.copyOf()))
                             val packet=WearEnvelope.wrap(frame,(prefix.toLong() shl 16) or id.toLong())

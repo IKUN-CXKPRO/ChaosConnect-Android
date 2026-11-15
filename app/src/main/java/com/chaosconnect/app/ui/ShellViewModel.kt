@@ -8,6 +8,7 @@ import com.chaosconnect.app.data.AppSettings
 import com.chaosconnect.app.protocol.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -30,6 +31,25 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     fun interruptTerminal(){terminalController.interrupt()}
     fun clearTerminal(){terminalController.clear()}
     fun terminalVisible(visible:Boolean){terminalController.visible=visible}
+    private val speedMutable=MutableStateFlow(SpeedTestState())
+    val speedTest=speedMutable.asStateFlow()
+    private var speedJob:Job?=null
+    @Volatile private var speedGeneration=0
+    fun startSpeedTest() {
+        if(speedJob?.isActive==true)return
+        val link=session
+        if(link==null || link.state.value.phase!=SessionPhase.CONNECTED){speedMutable.value=SpeedTestState(message="请先连接并在手环确认");return}
+        val generation=++speedGeneration
+        speedMutable.value=SpeedTestState(running=true,message="正在测速并校验数据…")
+        speedJob=viewModelScope.launch(Dispatchers.Default) {
+            try {
+                ConnectionSpeedTest(link).run {progress->if(generation==speedGeneration)speedMutable.update{it.copy(measured=true,progress=progress)}}
+            }catch(e:CancellationException){throw e}
+            catch(e:Exception){if(generation==speedGeneration)speedMutable.update{it.copy(running=false,message=e.message ?: "测速失败")}}
+        }
+    }
+    fun stopSpeedTest(){++speedGeneration;speedJob?.cancel();speedJob=null;speedMutable.update{it.copy(running=false,message=if(it.running)"测速已停止" else it.message)}}
+    private fun resetSpeedTest(){stopSpeedTest();speedMutable.value=SpeedTestState()}
     private var session:ChaosSession?=null
     private var sessionObserver:Job?=null
     var files:ChaosFiles?=null
@@ -74,7 +94,7 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     fun bluetoothPermissionDenied(){bluetooth.permissionDenied()}
     fun connectBluetooth(address:String){
         if(bluetooth.state.value.connecting)return
-        terminalController.bind(null);resetBrowser();sessionObserver?.cancel();session?.close();session=null;files=null
+        resetSpeedTest();terminalController.bind(null);resetBrowser();sessionObserver?.cancel();session?.close();session=null;files=null
         protocolMutable.value=SessionState()
         bluetooth.connect(address)
     }
@@ -88,11 +108,12 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     fun update(edit: (AppSettings) -> AppSettings) { edits.trySend(edit) }
     /** A real secure Bluetooth or authenticated host carrier; no mock peer is installed. */
     fun attachAuthenticatedTransport(transport:ChaosTransport,peer:BluetoothPeer?=null) {
-        resetBrowser();sessionObserver?.cancel();session?.close();files=null
+        resetSpeedTest();resetBrowser();sessionObserver?.cancel();session?.close();files=null
         val active=ChaosSession(transport,viewModelScope);session=active;terminalController.bind(active)
         var catalogSaved=false
         sessionObserver=viewModelScope.launch {active.state.collect {state -> if(session===active) {
             protocolMutable.value=state
+            if(state.phase!=SessionPhase.CONNECTED && speedTest.value.running)stopSpeedTest()
             if(terminal.value.active && (state.phase!=SessionPhase.CONNECTED || state.access?.allows(MobilePermission.NSH)!=true))terminalController.revoke()
             if(state.phase==SessionPhase.DISCONNECTED || state.phase==SessionPhase.AWAITING_APPROVAL){files=null;resetBrowser()}
             if(state.phase==SessionPhase.CONNECTED) {
@@ -107,6 +128,6 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun checkProtocol() {checkMutable.value=CcnCodec.selfCheck()}
-    fun disconnectProtocol() {terminalController.bind(null);resetBrowser();bluetooth.cancelConnection();session?.close();files=null}
-    override fun onCleared() {terminalController.bind(null);bluetooth.close();session?.close();super.onCleared()}
+    fun disconnectProtocol() {resetSpeedTest();terminalController.bind(null);resetBrowser();bluetooth.cancelConnection();session?.close();files=null}
+    override fun onCleared() {stopSpeedTest();terminalController.bind(null);bluetooth.close();session?.close();super.onCleared()}
 }

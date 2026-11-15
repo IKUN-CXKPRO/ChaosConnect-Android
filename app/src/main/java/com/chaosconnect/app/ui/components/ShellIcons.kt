@@ -8,8 +8,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-/** Only the three shell icons are bundled, avoiding an entire icon catalog. */
+/** Small local icon set for shell navigation and feature shortcuts. */
 object ShellIcons {
+    val Features = ImageVector.Builder("Features",24.dp,24.dp,24f,24f).apply {
+        path(stroke=SolidColor(Color.Black),strokeLineWidth=1.7f,strokeLineCap=StrokeCap.Round,strokeLineJoin=StrokeJoin.Round) {
+            for(x in listOf(4f,14f))for(y in listOf(4f,14f)) {
+                moveTo(x,y);lineTo(x+6,y);lineTo(x+6,y+6);lineTo(x,y+6);close()
+            }
+        }
+    }.build()
     val Terminal = ImageVector.Builder("Terminal",24.dp,24.dp,24f,24f).apply {
         path(stroke=SolidColor(Color.Black),strokeLineWidth=1.7f,strokeLineCap=StrokeCap.Round,strokeLineJoin=StrokeJoin.Round) {
             moveTo(5f,7f);lineTo(10f,12f);lineTo(5f,17f);moveTo(12f,17f);lineTo(20f,17f)

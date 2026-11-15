@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
             val bluetooth by vm.bluetoothState.collectAsStateWithLifecycle()
             val browser by vm.browser.collectAsStateWithLifecycle()
             val terminal by vm.terminal.collectAsStateWithLifecycle()
+            val speedTest by vm.speedTest.collectAsStateWithLifecycle()
             val permissions=rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){result ->
                 if(result.values.all{it})vm.scanBluetooth() else vm.bluetoothPermissionDenied()
             }
@@ -34,7 +35,7 @@ class MainActivity : ComponentActivity() {
             val navigation = rememberShellNavigation()
             settings?.let { current ->
                 AppTheme(current) { ShellApp(current, devices, vm::update, navigation,protocol,protocolCheck,vm::checkProtocol,vm::disconnectProtocol,bluetooth,{permissions.launch(arrayOf(Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT))},vm::connectBluetooth,vm::requestDeveloper,
-                    browser,{vm.loadDirectory()},{vm.loadDirectory(browser.parent)},{vm.loadDirectory(append=true)},vm::openFile,terminal,vm::startTerminal,vm::stopTerminal,vm::sendTerminal,vm::interruptTerminal,vm::clearTerminal,vm::terminalVisible) }
+                    browser,{vm.loadDirectory()},{vm.loadDirectory(browser.parent)},{vm.loadDirectory(append=true)},vm::openFile,terminal,vm::startTerminal,vm::stopTerminal,vm::sendTerminal,vm::interruptTerminal,vm::clearTerminal,vm::terminalVisible,speedTest,vm::startSpeedTest,vm::stopSpeedTest) }
             }
         }
     }

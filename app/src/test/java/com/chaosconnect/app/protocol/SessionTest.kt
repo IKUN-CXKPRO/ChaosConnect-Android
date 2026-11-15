@@ -66,6 +66,17 @@ class SessionTest {
         assertEquals(1,link.queued.count {it.frame.opcode==Op.MKDIR})
         assertEquals(SessionPhase.DISCONNECTED,session.state.value.phase)
     }
+    @Test fun continuousStatusPollingDoesNotExhaustMutationRequestNumbers()=runTest {
+        val link=Link();val session=ChaosSession(link,backgroundScope,0x1234)
+        try {
+            session.connect();repeat(65536){session.ping()}
+            val work=async{session.request(Op.MKDIR,WireWriter().path("/data/test").build())}
+            runCurrent();val request=link.queued.single()
+            assertEquals(2,request.frame.requestId)
+            link.answer(request,byteArrayOf());work.await()
+            assertEquals(SessionPhase.CONNECTED,session.state.value.phase)
+        }finally{session.close()}
+    }
     @Test fun callbackTransportDoesNotSilentlyDropQueueOverflow() {
         var closed=false
         val adapter=AuthenticatedTransport(4096,{}, {closed=true})

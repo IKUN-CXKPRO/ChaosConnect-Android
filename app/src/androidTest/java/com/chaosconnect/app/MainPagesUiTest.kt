@@ -40,14 +40,15 @@ class MainPagesUiTest {
             ui.runOnIdle {assertEquals("band",selected);selected=null}
         }
     }
-    @Test fun homeIsOneDeviceCardAndUpdatesLiveConnectionState() {
+    @Test fun homeHasLiveDeviceStatusAndWorkingFeatureCards() {
         var miuix by mutableStateOf(true)
         var phase by mutableStateOf(SessionPhase.AWAITING_APPROVAL)
+        var files=0;var terminals=0
         ui.setContent {
             AppTheme(AppSettings(useMiuix=miuix,darkMode=DarkMode.LIGHT,dynamicColor=false)) {
                 val state=pairingStatus(BluetoothState(),SessionState(phase=phase,attempted=true))
-                if(miuix)MiuixHome("Xiaomi Smart Band 10 Pro",state,{},{})
-                else Md3Home("Xiaomi Smart Band 10 Pro",state,{},{})
+                if(miuix)MiuixHome("Xiaomi Smart Band 10 Pro",state,{},{},{files++},{terminals++})
+                else Md3Home("Xiaomi Smart Band 10 Pro",state,{},{},{files++},{terminals++})
             }
         }
         for(style in listOf(true,false)) {
@@ -55,9 +56,12 @@ class MainPagesUiTest {
             ui.onNodeWithTag("home_device_name",useUnmergedTree=true).assertTextEquals("Xiaomi Smart Band 10 Pro")
             ui.onNodeWithTag("home_connection_status",useUnmergedTree=true).assertTextEquals("等待手环确认连接")
             ui.onNodeWithTag("add_device").assertDoesNotExist()
+            ui.onNodeWithTag("home_files").performScrollTo().performClick()
+            ui.onNodeWithTag("home_terminal").performScrollTo().performClick()
             ui.runOnIdle {phase=SessionPhase.CONNECTED}
             ui.onNodeWithTag("home_connection_status",useUnmergedTree=true).assertTextEquals("设备已连接")
         }
+        ui.runOnIdle{assertEquals(2,files);assertEquals(2,terminals)}
     }
     @Test fun filePageShowsOnlyRealEntriesAndCallsDirectoryAndPaginationActions() {
         var miuix by mutableStateOf(true)

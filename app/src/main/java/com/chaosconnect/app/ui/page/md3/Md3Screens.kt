@@ -72,15 +72,15 @@ private fun Page(title: String, subtitle: String, back: (() -> Unit)? = null, on
 }
 
 @Composable
-fun Md3Home(deviceName:String, status:ConnectionStatus, onConnect:()->Unit, onSettings:()->Unit) {
+fun Md3Home(deviceName:String, status:ConnectionStatus, onConnect:()->Unit, onSettings:()->Unit, onFiles:()->Unit={}, onTerminal:()->Unit={}) {
     val c=LocalShellColors.current
     Page("主页","CHAOSCONNECT",onSettings=onSettings) {
         Panel(Modifier.testTag("home_device_card").clip(RoundedCornerShape(28.dp)).clickable(role=Role.Button,onClick=onConnect)) {
-            Column(Modifier.fillMaxWidth().heightIn(min=300.dp).padding(28.dp),verticalArrangement=Arrangement.SpaceBetween) {
-                Box(Modifier.size(72.dp).clip(RoundedCornerShape(24.dp)).background(c.accent.copy(alpha=.1f)),contentAlignment=Alignment.Center) {
-                    GlyphIcon(Glyph.DEVICES,Modifier.size(38.dp),c.accent)
+            Column(Modifier.fillMaxWidth().heightIn(min=240.dp).padding(24.dp),verticalArrangement=Arrangement.SpaceBetween) {
+                Box(Modifier.size(56.dp).clip(RoundedCornerShape(24.dp)).background(c.accent.copy(alpha=.1f)),contentAlignment=Alignment.Center) {
+                    GlyphIcon(Glyph.DEVICES,Modifier.size(32.dp),c.accent)
                 }
-                Spacer(Modifier.height(48.dp))
+                Spacer(Modifier.height(28.dp))
                 Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
                     Label(deviceName,28,bold=true,modifier=Modifier.testTag("home_device_name"))
                     Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -90,15 +90,20 @@ fun Md3Home(deviceName:String, status:ConnectionStatus, onConnect:()->Unit, onSe
                 }
             }
         }
+        Label("常用功能",16,bold=true,modifier=Modifier.padding(start=8.dp,top=4.dp))
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+            QuickFeature("文件管理","浏览手环文件",Glyph.FILES,"home_files",Modifier.weight(1f),onFiles)
+            QuickFeature("NSH终端","运行系统命令",Glyph.TERMINAL,"home_terminal",Modifier.weight(1f),onTerminal)
+        }
     }
 }
 
 @Composable
-fun Md3Files(state:FileBrowserState,protocol:SessionState,onConnect:()->Unit,onRefresh:()->Unit,onParent:()->Unit,onMore:()->Unit,onEntry:(RemoteEntry)->Unit,onSettings:(()->Unit)?=null) {
+fun Md3Files(state:FileBrowserState,protocol:SessionState,onConnect:()->Unit,onRefresh:()->Unit,onParent:()->Unit,onMore:()->Unit,onEntry:(RemoteEntry)->Unit,onSettings:(()->Unit)?=null,back:(()->Unit)?=null) {
     val c=LocalShellColors.current
     val connected=protocol.phase==SessionPhase.CONNECTED
     val canRead=connected && (protocol.access?.allows(MobilePermission.READ)!=false)
-    Page("文件管理","FILES",onSettings=onSettings) {
+    Page("文件管理","FILES",back=back,onSettings=onSettings) {
         if(!canRead) {
             Panel {
                 Column(Modifier.fillMaxWidth().padding(28.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
@@ -139,9 +144,10 @@ fun Md3Files(state:FileBrowserState,protocol:SessionState,onConnect:()->Unit,onR
 }
 
 @Composable
-fun Md3Settings(settings: AppSettings, back: () -> Unit, onTheme: () -> Unit, onAbout: () -> Unit, onProtocol: () -> Unit) {
+fun Md3Settings(settings: AppSettings, back: () -> Unit, onTheme: () -> Unit, onAbout: () -> Unit, onProtocol: () -> Unit, onSpeed: () -> Unit = {}) {
     Page("设置", "PREFERENCES",back) {
         Panel { Menu("主题","${if(settings.useMiuix) "Miuix" else "Material 3"} · ${settings.darkMode.label}",Glyph.PALETTE,"open_theme",onTheme) }
+        Panel { Menu("连接测速","测试当前蓝牙连接的传输速度",Glyph.CONNECT,"open_speed_test",onSpeed) }
         Panel { Menu("ChaosConnect 协议","CCN1 v1 · 文件桥",Glyph.CONNECT,"open_protocol",onProtocol) }
         Panel { Menu("关于","ChaosConnect ${com.chaosconnect.app.BuildConfig.VERSION_NAME}",Glyph.INFO,"settings_about",onAbout) }
     }
@@ -306,8 +312,44 @@ fun Md3Profile(onSettings:()->Unit,onProtocol:()->Unit,onAbout:()->Unit) {
     }
 }
 @Composable
-fun Md3Terminal(state:com.chaosconnect.app.ui.TerminalState,protocol:SessionState,onConnect:()->Unit,onStart:()->Unit,onStop:()->Unit,onSend:(String)->Unit,onInterrupt:()->Unit,onClear:()->Unit) {
-    Page("终端","NSH") {
+fun Md3Terminal(state:com.chaosconnect.app.ui.TerminalState,protocol:SessionState,onConnect:()->Unit,onStart:()->Unit,onStop:()->Unit,onSend:(String)->Unit,onInterrupt:()->Unit,onClear:()->Unit,back:(()->Unit)?=null) {
+    Page("终端","NSH",back) {
         TerminalConsole(state,protocol,onConnect,onStart,onStop,onSend,onInterrupt,onClear)
+    }
+}
+
+@Composable
+private fun QuickFeature(title:String,summary:String,icon:Glyph,tag:String,modifier:Modifier,onClick:()->Unit) {
+    val c=LocalShellColors.current
+    Panel(modifier.clip(RoundedCornerShape(24.dp)).testTag(tag).clickable(role=Role.Button,onClick=onClick)) {
+        Column(Modifier.fillMaxWidth().heightIn(min=144.dp).padding(20.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            GlyphIcon(icon,Modifier.size(28.dp),c.accent)
+            Spacer(Modifier.height(4.dp));Label(title,18,bold=true);Label(summary,12,muted=true)
+        }
+    }
+}
+@Composable
+fun Md3Functions(onFiles:()->Unit,onTerminal:()->Unit) {
+    Page("功能列表","FUNCTIONS") {
+        Panel {
+            Menu("文件管理","浏览目录与查看文件",Glyph.FILES,"functions_files",onFiles)
+            Menu("NSH终端","连接手环原生终端",Glyph.TERMINAL,"functions_terminal",onTerminal)
+        }
+    }
+}
+
+@Composable
+fun Md3SpeedTest(state:com.chaosconnect.app.ui.SpeedTestState,protocol:SessionState,onStart:()->Unit,onStop:()->Unit,onConnect:()->Unit,back:()->Unit) {
+    Page("连接测速","SPEED TEST",back) {
+        Panel {Column(Modifier.fillMaxWidth().padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Label(com.chaosconnect.app.ui.speedText(state.progress.bytesPerSecond),32,bold=true,modifier=Modifier.testTag("speed_value"))
+            Label(state.message,14,muted=true,modifier=Modifier.testTag("speed_status"))
+            Label("已发送：${state.progress.sent} 字节",14)
+            Label("已接收：${state.progress.received} 字节",14)
+            Label("耗时：${state.progress.elapsedMillis / 1000.0} 秒",14)
+            Label("点击开始后持续测速，点击停止结束，不限时间和数据量。速度按已校验数据量÷耗时计算，包含往返等待，不是单向带宽上限。",13,muted=true)
+        }}
+        if(protocol.phase!=SessionPhase.CONNECTED)Action("前往连接",onConnect,Modifier.fillMaxWidth().testTag("speed_connect"))
+        else Action(if(state.running)"停止测速" else "开始测速",if(state.running)onStop else onStart,Modifier.fillMaxWidth().testTag("speed_start_stop"))
     }
 }

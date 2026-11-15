@@ -17,11 +17,11 @@ import top.yukonga.miuix.kmp.nav.core.*
 @Stable
 class ShellNavigation(val stack: NavBackStack, val pager: PagerState,
     private val selection: MutableIntState, private val scope: CoroutineScope) {
-    val selected get() = selection.intValue
+    val selected get() = selection.intValue.coerceIn(0,3)
     private var animationJob: Job? = null
     private var velocity = 0f
     fun select(index: Int) {
-        if(index !in 0..4 || selected == index) return
+        if(index !in 0..3 || selected == index) return
         selection.intValue = index
         val initialVelocity = velocity
         animationJob?.cancel()
@@ -42,8 +42,9 @@ class ShellNavigation(val stack: NavBackStack, val pager: PagerState,
         }
     }
     fun settle(page: Int) {
-        if(animationJob?.isActive != true) { selection.intValue = page; velocity = 0f }
+        if(animationJob?.isActive != true) { selection.intValue = page.coerceIn(0,3); velocity = 0f }
     }
+    fun main(index:Int) { while(stack.size>1)stack.removeLastOrNull();select(index) }
     fun navigate(route: Route) { if(stack.lastOrNull()!=route) stack.add(route) }
     fun back() { if(stack.size>1) stack.removeLastOrNull() }
 }
@@ -51,7 +52,7 @@ class ShellNavigation(val stack: NavBackStack, val pager: PagerState,
 @Composable
 fun rememberShellNavigation(): ShellNavigation {
     val stack = rememberNavBackStack<Route>(Route.Main)
-    val pager = rememberPagerState { 5 }
+    val pager = rememberPagerState { 4 }
     val selection = rememberSaveable { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val navigation = remember(stack,pager,selection,scope) { ShellNavigation(stack,pager,selection,scope) }

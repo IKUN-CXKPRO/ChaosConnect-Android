@@ -40,6 +40,20 @@ class ProductionInteropTest {
         val peer=Peer(root!!);val session=ChaosSession(peer,this,prefix=0x1234)
         try {peer.control("ANDROID $connectionPolicy $mask");session.connect();block(session,ChaosFiles(session),peer)}finally {session.close()}
     }
+    @Test fun nativeCLinkSpeedChecksEchoAndDoesNotWriteFiles()=runBlocking {
+        withPeer(mask=1) {session,files,_ ->
+            coroutineScope {
+                val progress=CompletableDeferred<SpeedProgress>()
+                val job=launch {ConnectionSpeedTest(session).run {progress.complete(it)}}
+                try {
+                    val measured=withTimeout(10_000){progress.await()}
+                    assertTrue(measured.received>0);assertEquals(measured.sent,measured.received)
+                    assertTrue(measured.elapsedMillis>=200);assertTrue(measured.bytesPerSecond>0)
+                }finally{job.cancelAndJoin()}
+            }
+            assertTrue(files.list("/data").entries.isEmpty())
+        }
+    }
     @Test fun nativeCTerminalFramingAndPermissionRevocation()=runBlocking {
         // C file engine and Kotlin terminal protocol are production code;
         // PTY is a deterministic echo seam, not proof of hardware command execution.

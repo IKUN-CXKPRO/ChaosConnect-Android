@@ -1,0 +1,55 @@
+{
+  "version": "0.5.1",
+  "versionCode": 8,
+  "build": "debug",
+  "agp": "9.4.1",
+  "apk": {
+    "name": "ChaosConnect-0.5.1-debug.apk",
+    "bytes": 42065109,
+    "sha256": "399bbac13c04398924c5839c2073dd929ee8928c81ec4ce1d8a86591179951ea"
+  },
+  "tests": {
+    "jvm": {
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "instrumentation": {
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "lint": {
+    "Error": 0,
+    "Warning": 13
+  },
+  "dock": {
+    "widthDp": 264,
+    "heightDp": 56,
+    "tabs": [
+      "主页",
+      "连接",
+      "功能列表",
+      "我的"
+    ]
+  },
+  "speedTest": {
+    "durationLimit": null,
+    "payloadLimit": null,
+    "stop": "manual, disconnect, protocol error or process end",
+    "unit": "KiB/s",
+    "method": "verified CCN1 ECHO payload per direction divided by elapsed time, warmup excluded",
+    "windowMaximum": 8,
+    "uiRefreshMillis": 200,
+    "continuousRegression": {
+      "virtualMillis": 180011,
+      "echoRequestsGreaterThan": 65535,
+      "payloadBytesGreaterThan": 8388608,
+      "statusPolls": 65536
+    },
+    "hardwareThroughputMeasured": false
+  }
+}

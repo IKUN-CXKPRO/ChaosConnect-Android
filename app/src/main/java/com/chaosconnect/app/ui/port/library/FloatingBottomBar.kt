@@ -194,7 +194,7 @@ fun <T> FloatingBottomBar(
             valueRange = 0f..(tabsCount - 1).toFloat(),
             visibilityThreshold = 0.001f,
             initialScale = 1f,
-            pressedScale = 78f / 56f,
+            pressedScale = 68f / 48f,
             canDrag = { position ->
                 position.x in 0f..totalWidthPx
             },
@@ -264,7 +264,7 @@ fun <T> FloatingBottomBar(
         items.forEachIndexed { index, item ->
             Column(
                 modifier = Modifier
-                    .defaultMinSize(minWidth = 76.dp)
+                    .defaultMinSize(minWidth = 64.dp)
                     .testTag("tab_$index")
                     .semantics(mergeDescendants = true) {
                         selected = index == currentIndex
@@ -397,7 +397,7 @@ fun <T> FloatingBottomBar(
                         },
                     )
                     .then(dampedDragAnimation.modifier)
-                    .height(64.dp)
+                    .height(56.dp)
                     .padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 content = tabsContent,
@@ -431,7 +431,7 @@ fun <T> FloatingBottomBar(
                             onDrawSurface = { drawRect(containerColor) },
                         )
                         .then(interactiveHighlight?.modifier ?: Modifier)
-                        .height(56.dp)
+                        .height(48.dp)
                         .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -486,7 +486,7 @@ fun <T> FloatingBottomBar(
                                 alpha = dampedDragAnimation.pressProgress,
                             )
                         }
-                        .height(56.dp)
+                        .height(48.dp)
                         .width(tabWidthDp),
                 )
             } else {
@@ -499,7 +499,7 @@ fun <T> FloatingBottomBar(
                         }
                         .clip(pillShape)
                         .background(colors.indicatorColor.copy(alpha = 0.15f), pillShape)
-                        .height(56.dp)
+                        .height(48.dp)
                         .width(tabWidthDp),
                     // Force start alignment for the Box container to prevent centering
                     contentAlignment = Alignment.CenterStart,
@@ -511,7 +511,7 @@ fun <T> FloatingBottomBar(
                                 .clearAndSetSemantics {}
                                 .wrapContentWidth(align = Alignment.Start, unbounded = true)
                                 .requiredWidth(with(density) { (totalWidthPx - 8.dp.toPx()).toDp() })
-                                .height(56.dp)
+                                .height(48.dp)
                                 .graphicsLayer {
                                     val progressOffset = dampedDragAnimation.value * tabWidthPx
                                     translationX = if (isLtr) -progressOffset else progressOffset

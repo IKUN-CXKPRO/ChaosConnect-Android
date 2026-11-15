@@ -31,6 +31,9 @@ import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 @Serializable
 sealed interface Route : NavKey {
     @Serializable data object Main : Route
+    @Serializable data object Files : Route
+    @Serializable data object Terminal : Route
+    @Serializable data object SpeedTest : Route
     @Serializable data object Settings : Route
     @Serializable data object Theme : Route
     @Serializable data object Pairing : Route
@@ -42,7 +45,8 @@ sealed interface Route : NavKey {
 fun ShellApp(settings: AppSettings, devices: List<SavedDevice>, update: ((AppSettings) -> AppSettings) -> Unit, navigation: ShellNavigation,
     protocol:SessionState,protocolCheck:Boolean?,onCheck:()->Unit,onDisconnect:()->Unit,bluetooth:BluetoothState=BluetoothState(),onScan:()->Unit={},onConnect:(String)->Unit={},onDeveloper:()->Unit={},
     browser:FileBrowserState=FileBrowserState(),onRefreshFiles:()->Unit={},onParent:()->Unit={},onMore:()->Unit={},onEntry:(RemoteEntry)->Unit={},
-    terminal:TerminalState=TerminalState(),onTerminalStart:()->Unit={},onTerminalStop:()->Unit={},onTerminalSend:(String)->Unit={},onTerminalInterrupt:()->Unit={},onTerminalClear:()->Unit={},onTerminalVisible:(Boolean)->Unit={}) {
+    terminal:TerminalState=TerminalState(),onTerminalStart:()->Unit={},onTerminalStop:()->Unit={},onTerminalSend:(String)->Unit={},onTerminalInterrupt:()->Unit={},onTerminalClear:()->Unit={},onTerminalVisible:(Boolean)->Unit={},
+    speedTest:SpeedTestState=SpeedTestState(),onSpeedStart:()->Unit={},onSpeedStop:()->Unit={}) {
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     var resumed by remember {mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))}
     DisposableEffect(lifecycle) {
@@ -56,18 +60,21 @@ fun ShellApp(settings: AppSettings, devices: List<SavedDevice>, update: ((AppSet
     val select=navigation::select
     val navigate=navigation::navigate
     val back=navigation::back
+    val openFiles={navigate(Route.Files)}
+    val openTerminal={navigate(Route.Terminal)}
+    val openConnection={navigation.main(1)}
     val openSettings={navigate(Route.Settings)}
     val openProtocol={navigate(Route.Protocol)}
     val openTheme={navigate(Route.Theme)}
     val openAbout={navigate(Route.About)}
     val connectionStatus=pairingStatus(bluetooth,protocol)
     val deviceName=homeDeviceName(bluetooth,devices)
-    LaunchedEffect(pager.settledPage,protocol.phase,protocol.access?.permissions,browser.loaded) {
-        if(pager.settledPage==1 && protocol.phase==SessionPhase.CONNECTED && !browser.loaded)onRefreshFiles()
+    LaunchedEffect(stack.lastOrNull(),protocol.phase,protocol.access?.permissions,browser.loaded) {
+        if(stack.lastOrNull()==Route.Files && protocol.phase==SessionPhase.CONNECTED && !browser.loaded)onRefreshFiles()
     }
-    LaunchedEffect(pager.settledPage,protocol.phase,protocol.access?.permissions,stack.lastOrNull(),resumed) {
-        onTerminalVisible(pager.settledPage==2 && stack.lastOrNull()==Route.Main && resumed)
-        if(pager.settledPage==2 && stack.lastOrNull()==Route.Main && resumed && protocol.phase==SessionPhase.CONNECTED && protocol.access?.allows(com.chaosconnect.app.protocol.MobilePermission.NSH)==true)onTerminalStart()
+    LaunchedEffect(protocol.phase,protocol.access?.permissions,stack.lastOrNull(),resumed) {
+        onTerminalVisible(stack.lastOrNull()==Route.Terminal && resumed)
+        if(stack.lastOrNull()==Route.Terminal && resumed && protocol.phase==SessionPhase.CONNECTED && protocol.access?.allows(com.chaosconnect.app.protocol.MobilePermission.NSH)==true)onTerminalStart()
     }
     DisposableEffect(Unit){onDispose{onTerminalVisible(false)}}
     BackHandler(stack.size==1 && selected!=0) {select(0)}
@@ -79,23 +86,21 @@ fun ShellApp(settings: AppSettings, devices: List<SavedDevice>, update: ((AppSet
                 HorizontalPager(pager,Modifier.fillMaxSize().layerBackdrop(backdrop),beyondViewportPageCount=1,key={it}) {index ->
                     Box(Modifier.fillMaxSize().graphicsLayer {clip=true}.then(if(index==pager.currentPage)Modifier else Modifier.clearAndSetSemantics {})) {
                         if(settings.useMiuix) when(index) {
-                            0 -> MiuixHome(deviceName,connectionStatus,{select(3)},openSettings)
-                            1 -> MiuixFiles(browser,protocol,{select(3)},onRefreshFiles,onParent,onMore,onEntry,openSettings)
-                            2 -> MiuixTerminal(terminal,protocol,{select(3)},onTerminalStart,onTerminalStop,onTerminalSend,onTerminalInterrupt,onTerminalClear)
-                            3 -> MiuixConnection(bluetooth,onScan,onConnect,protocol,onDisconnect,openProtocol,openSettings)
+                            0 -> MiuixHome(deviceName,connectionStatus,openConnection,openSettings,openFiles,openTerminal)
+                            1 -> MiuixConnection(bluetooth,onScan,onConnect,protocol,onDisconnect,openProtocol,openSettings)
+                            2 -> MiuixFunctions(openFiles,openTerminal)
                             else -> MiuixProfile(openSettings,openProtocol,openAbout)
                         } else when(index) {
-                            0 -> Md3Home(deviceName,connectionStatus,{select(3)},openSettings)
-                            1 -> Md3Files(browser,protocol,{select(3)},onRefreshFiles,onParent,onMore,onEntry,openSettings)
-                            2 -> Md3Terminal(terminal,protocol,{select(3)},onTerminalStart,onTerminalStop,onTerminalSend,onTerminalInterrupt,onTerminalClear)
-                            3 -> Md3Connection(bluetooth,onScan,onConnect,protocol,onDisconnect,openProtocol,openSettings)
+                            0 -> Md3Home(deviceName,connectionStatus,openConnection,openSettings,openFiles,openTerminal)
+                            1 -> Md3Connection(bluetooth,onScan,onConnect,protocol,onDisconnect,openProtocol,openSettings)
+                            2 -> Md3Functions(openFiles,openTerminal)
                             else -> Md3Profile(openSettings,openProtocol,openAbout)
                         }
                     }
                 }
                 if(settings.floatingDock) {
                     LiquidDock(settings,selected,backdrop,select,Modifier.align(Alignment.BottomCenter)
-                        .navigationBarsPadding().padding(bottom=12.dp))
+                        .navigationBarsPadding().padding(bottom=10.dp))
                 } else if(settings.useMiuix) {
                     MiuixNavigation(selected,select,Modifier.align(Alignment.BottomCenter))
                 } else {
@@ -103,9 +108,21 @@ fun ShellApp(settings: AppSettings, devices: List<SavedDevice>, update: ((AppSet
                 }
             }
         }
+        entry<Route.Files> {
+            if(settings.useMiuix) MiuixFiles(browser,protocol,openConnection,onRefreshFiles,onParent,onMore,onEntry,openSettings,back)
+            else Md3Files(browser,protocol,openConnection,onRefreshFiles,onParent,onMore,onEntry,openSettings,back)
+        }
+        entry<Route.Terminal> {
+            if(settings.useMiuix) MiuixTerminal(terminal,protocol,openConnection,onTerminalStart,onTerminalStop,onTerminalSend,onTerminalInterrupt,onTerminalClear,back)
+            else Md3Terminal(terminal,protocol,openConnection,onTerminalStart,onTerminalStop,onTerminalSend,onTerminalInterrupt,onTerminalClear,back)
+        }
+        entry<Route.SpeedTest> {
+            if(settings.useMiuix) MiuixSpeedTest(speedTest,protocol,onSpeedStart,onSpeedStop,openConnection,back)
+            else Md3SpeedTest(speedTest,protocol,onSpeedStart,onSpeedStop,openConnection,back)
+        }
         entry<Route.Settings> {
-            if(settings.useMiuix) MiuixSettings(settings,back,{navigate(Route.Theme)},{navigate(Route.About)},{navigate(Route.Protocol)})
-            else Md3Settings(settings,back,{navigate(Route.Theme)},{navigate(Route.About)},{navigate(Route.Protocol)})
+            if(settings.useMiuix) MiuixSettings(settings,back,{navigate(Route.Theme)},{navigate(Route.About)},{navigate(Route.Protocol)},{navigate(Route.SpeedTest)})
+            else Md3Settings(settings,back,{navigate(Route.Theme)},{navigate(Route.About)},{navigate(Route.Protocol)},{navigate(Route.SpeedTest)})
         }
         entry<Route.Theme> {if(settings.useMiuix)MiuixThemeScreen(settings,update,back) else Md3ThemeScreen(settings,update,back)}
         entry<Route.Pairing> {if(settings.useMiuix)MiuixConnection(bluetooth,onScan,onConnect,protocol,onDisconnect,openProtocol,openSettings,openTheme,openAbout) else Md3Connection(bluetooth,onScan,onConnect,protocol,onDisconnect,openProtocol,openSettings,openTheme,openAbout)}

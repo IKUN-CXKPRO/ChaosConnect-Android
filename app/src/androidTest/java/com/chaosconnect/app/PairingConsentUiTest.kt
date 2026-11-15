@@ -58,7 +58,8 @@ class PairingConsentUiTest {
                 val link=Link().apply{authorization=2}
                 ui.runOnUiThread {vm.attachAuthenticatedTransport(link)}
                 ui.waitUntil(5_000){vm.protocol.value.phase==SessionPhase.CONNECTED}
-                ui.onNodeWithTag("tab_1").performClick()
+                ui.onNodeWithTag("tab_0").performClick()
+                ui.onNodeWithTag("home_files").performScrollTo().performClick()
                 ui.waitUntil(5_000){vm.browser.value.loaded}
                 assertEquals(16,vm.browser.value.entries.size)
                 ui.onNodeWithTag("files_more").performScrollTo().performClick()
@@ -77,7 +78,8 @@ class PairingConsentUiTest {
                 ui.waitForIdle()
                 ui.onNodeWithTag("files_connect").assertIsDisplayed()
                 assertTrue(vm.browser.value.entries.isEmpty())
-                ui.onNodeWithTag("tab_0").performClick()
+                ui.runOnUiThread {ui.activity.onBackPressedDispatcher.onBackPressed()}
+                ui.waitForIdle();ui.onNodeWithTag("tab_0").assertIsSelected()
             }
         }finally {
             ui.runOnUiThread {vm.disconnectProtocol()}
@@ -93,7 +95,7 @@ class PairingConsentUiTest {
             for(miuix in listOf(true,false)) {
                 runBlocking {app.settings.update(AppSettings(useMiuix=miuix,dynamicColor=false,haptics=false))}
                 ui.waitForIdle()
-                ui.onNodeWithTag("tab_3").performClick()
+                ui.onNodeWithTag("tab_1").performClick()
                 val link=Link()
                 ui.runOnUiThread {vm.attachAuthenticatedTransport(link)}
                 ui.waitUntil(5_000){vm.protocol.value.phase==SessionPhase.AWAITING_APPROVAL}
