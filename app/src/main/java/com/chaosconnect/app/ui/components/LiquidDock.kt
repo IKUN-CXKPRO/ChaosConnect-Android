@@ -33,7 +33,7 @@ fun LiquidDock(settings: AppSettings, selected: Int, backdrop: Backdrop, onSelec
             else -> FloatingBottomBarMode.Blur
         },
         colors = FloatingBottomBarDefaults.colors(c.card, c.accent, c.text, c.accent),
-        iconContent = { item, _ -> GlyphIcon(item.second, Modifier.size(20.dp), color = LocalFloatingBottomBarContentColor.current) },
-        labelContent = { item, _ -> Label(item.first, 10, color = LocalFloatingBottomBarContentColor.current) },
+        iconContent = { item, _ -> GlyphIcon(item.second, Modifier.size(24.dp), color = LocalFloatingBottomBarContentColor.current) },
+        labelContent = { item, _ -> Label(item.first, 11, color = LocalFloatingBottomBarContentColor.current) },
     )
 }

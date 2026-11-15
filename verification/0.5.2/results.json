@@ -1,0 +1,43 @@
+{
+  "version": "0.5.2",
+  "versionCode": 9,
+  "baseCommit": "a8f274970f54f69dfe917d2425e60619d0095fa7",
+  "agp": "9.4.1",
+  "apk": {
+    "name": "ChaosConnect-0.5.2-debug.apk",
+    "bytes": 41690199,
+    "sha256": "2712585be35754f0e430a7e6c5b248fa9b121ea3498942b7bc93f4d39f744fc2"
+  },
+  "instrumentation": {
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "Error": 0,
+    "Warning": 13
+  },
+  "dock": {
+    "widthDp": 312,
+    "heightDp": 64,
+    "itemWidthDp": 76,
+    "indicatorHeightDp": 56,
+    "iconDp": 24,
+    "labelSp": 11,
+    "liquidGlassAlpha": {
+      "dark": 0.18,
+      "light": 0.22
+    },
+    "blurAlpha": {
+      "dark": 0.35,
+      "light": 0.45
+    }
+  },
+  "screenshots": [
+    "miuix-home.png",
+    "miuix-home-dark.png",
+    "md3-home.png",
+    "md3-home-dark.png"
+  ]
+}

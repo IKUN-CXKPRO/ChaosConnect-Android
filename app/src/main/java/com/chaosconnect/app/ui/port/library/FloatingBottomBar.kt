@@ -147,8 +147,11 @@ fun <T> FloatingBottomBar(
     val pillShape = remember { CircleShape }
     val isLiquidGlassMode = mode == FloatingBottomBarMode.LiquidGlass
     val isBlurMode = mode == FloatingBottomBarMode.Blur
-    val containerColor =
-        if (isLiquidGlassMode) colors.containerColor.copy(0.4f) else colors.containerColor
+    val containerColor = colors.containerColor.copy(alpha = when {
+        isLiquidGlassMode -> if (isInDark) 0.18f else 0.22f
+        isBlurMode -> if (isInDark) 0.35f else 0.45f
+        else -> colors.containerColor.alpha
+    })
 
     val tabsBackdrop = rememberLayerBackdrop()
     val density = LocalDensity.current
@@ -194,7 +197,7 @@ fun <T> FloatingBottomBar(
             valueRange = 0f..(tabsCount - 1).toFloat(),
             visibilityThreshold = 0.001f,
             initialScale = 1f,
-            pressedScale = 68f / 48f,
+            pressedScale = 78f / 56f,
             canDrag = { position ->
                 position.x in 0f..totalWidthPx
             },
@@ -264,7 +267,7 @@ fun <T> FloatingBottomBar(
         items.forEachIndexed { index, item ->
             Column(
                 modifier = Modifier
-                    .defaultMinSize(minWidth = 64.dp)
+                    .defaultMinSize(minWidth = 76.dp)
                     .testTag("tab_$index")
                     .semantics(mergeDescendants = true) {
                         selected = index == currentIndex
@@ -382,7 +385,7 @@ fun <T> FloatingBottomBar(
                                     blur(25.dp.toPx(), 25.dp.toPx())
                                 },
                                 onDrawSurface = {
-                                    drawRect(containerColor.copy(alpha = 0.65f))
+                                    drawRect(containerColor)
                                 },
                             )
                         } else {
@@ -397,7 +400,7 @@ fun <T> FloatingBottomBar(
                         },
                     )
                     .then(dampedDragAnimation.modifier)
-                    .height(56.dp)
+                    .height(64.dp)
                     .padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 content = tabsContent,
@@ -431,7 +434,7 @@ fun <T> FloatingBottomBar(
                             onDrawSurface = { drawRect(containerColor) },
                         )
                         .then(interactiveHighlight?.modifier ?: Modifier)
-                        .height(48.dp)
+                        .height(56.dp)
                         .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -486,7 +489,7 @@ fun <T> FloatingBottomBar(
                                 alpha = dampedDragAnimation.pressProgress,
                             )
                         }
-                        .height(48.dp)
+                        .height(56.dp)
                         .width(tabWidthDp),
                 )
             } else {
@@ -499,7 +502,7 @@ fun <T> FloatingBottomBar(
                         }
                         .clip(pillShape)
                         .background(colors.indicatorColor.copy(alpha = 0.15f), pillShape)
-                        .height(48.dp)
+                        .height(56.dp)
                         .width(tabWidthDp),
                     // Force start alignment for the Box container to prevent centering
                     contentAlignment = Alignment.CenterStart,
@@ -511,7 +514,7 @@ fun <T> FloatingBottomBar(
                                 .clearAndSetSemantics {}
                                 .wrapContentWidth(align = Alignment.Start, unbounded = true)
                                 .requiredWidth(with(density) { (totalWidthPx - 8.dp.toPx()).toDp() })
-                                .height(48.dp)
+                                .height(56.dp)
                                 .graphicsLayer {
                                     val progressOffset = dampedDragAnimation.value * tabWidthPx
                                     translationX = if (isLtr) -progressOffset else progressOffset

@@ -46,7 +46,7 @@ class ShellFlowTest {
     private fun theme() { tap("tab_3"); tap("profile_settings"); tap("open_theme") }
     private fun screenshot(name:String) {
         androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
-            .executeShellCommand("screencap -p /sdcard/Download/chaos051-$name.png").use {descriptor ->
+            .executeShellCommand("screencap -p /sdcard/Download/chaos${BuildConfig.VERSION_NAME.replace(".","")}-$name.png").use {descriptor ->
                 android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).readBytes()
             }
         ui.onRoot().captureToImage().asAndroidBitmap().let {bitmap ->
@@ -65,8 +65,13 @@ class ShellFlowTest {
             ui.waitForIdle()
             tap("tab_0")
             ui.onNodeWithTag("tab_4").assertDoesNotExist()
-            ui.onNodeWithTag("dock").assertHeightIsEqualTo(56.dp).assertWidthIsEqualTo(264.dp)
+            ui.onNodeWithTag("dock").assertHeightIsEqualTo(64.dp).assertWidthIsEqualTo(312.dp)
             screenshot(if(miuix) "miuix-home" else "md3-home")
+            runBlocking {app.settings.update(stored().copy(darkMode=DarkMode.DARK))}
+            ui.waitForIdle()
+            screenshot(if(miuix) "miuix-home-dark" else "md3-home-dark")
+            runBlocking {app.settings.update(stored().copy(darkMode=DarkMode.LIGHT))}
+            ui.waitForIdle()
             tap("home_device_card")
             ui.onNodeWithTag("tab_1").assertIsSelected()
             ui.onNodeWithTag("pair_connection_title").assertIsDisplayed()
