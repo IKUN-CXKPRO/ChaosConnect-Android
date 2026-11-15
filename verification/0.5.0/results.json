@@ -1,0 +1,72 @@
+{
+  "version": "0.5.0",
+  "module_commit": "5940dca8ee53b0fde623d3b74175940b39895dd9",
+  "apk_sha256": "0c61051b92125009cf6d24d823fa0a78a4a65611e7120d7e1fe39e0d86e0ab6c",
+  "apk_bytes": 41949341,
+  "wireless_hardware_verified": false,
+  "jvm": [
+    {
+      "name": "com.chaosconnect.app.protocol.ChaosTerminalTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.ui.ConnectionStatusTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.protocol.AndroidAccessTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.protocol.ProductionInteropTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.protocol.BandDiscoveryTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.protocol.SessionTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.protocol.CodecTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "instrumentation": [
+    {
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "lint": {
+    "Fatal": 0,
+    "Error": 0,
+    "Warning": 13,
+    "Information": 0
+  }
+}

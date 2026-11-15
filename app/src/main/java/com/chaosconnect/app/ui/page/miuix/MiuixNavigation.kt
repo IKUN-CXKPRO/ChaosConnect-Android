@@ -10,7 +10,7 @@ import top.yukonga.miuix.kmp.basic.NavigationBarItem
 @Composable
 fun MiuixNavigation(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     NavigationBar(modifier=modifier) {
-        listOf("首页" to ShellIcons.Home,"设备" to ShellIcons.Devices,"我的" to ShellIcons.Profile).forEachIndexed {i,(title,icon) ->
+        listOf("主页" to ShellIcons.Home,"文件管理" to ShellIcons.Files,"终端" to ShellIcons.Terminal,"连接" to ShellIcons.Connect,"我的" to ShellIcons.Profile).forEachIndexed {i,(title,icon) ->
             NavigationBarItem(selected=selected==i,onClick={onSelect(i)},icon=icon,label=title,modifier=Modifier.testTag("tab_$i"))
         }
     }

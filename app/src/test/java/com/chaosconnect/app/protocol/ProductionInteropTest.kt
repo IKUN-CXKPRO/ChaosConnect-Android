@@ -1,6 +1,7 @@
 package com.chaosconnect.app.protocol
 
 import java.io.*
+import com.chaosconnect.app.ui.pairingStatus
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
@@ -39,6 +40,16 @@ class ProductionInteropTest {
         val peer=Peer(root!!);val session=ChaosSession(peer,this,prefix=0x1234)
         try {peer.control("ANDROID $connectionPolicy $mask");session.connect();block(session,ChaosFiles(session),peer)}finally {session.close()}
     }
+    @Test fun nativeCTerminalFramingAndPermissionRevocation()=runBlocking {
+        // C file engine and Kotlin terminal protocol are production code;
+        // PTY is a deterministic echo seam, not proof of hardware command execution.
+        withPeer(mask=33) {session,_,peer ->
+            val terminal=ChaosTerminal(session);assertTrue(terminal.open().lease>0)
+            terminal.send("ls /data\n".toByteArray());assertEquals("ls /data\n",terminal.read().bytes.toString(Charsets.UTF_8))
+            peer.control("ANDROID 0 1");session.ping()
+            try{terminal.send("reboot\n".toByteArray());fail()}catch(_:ProtocolException){}
+        }
+    }
     @Test fun nativeCHandshakeFilesWindowTransferAndUtf8()=runBlocking {
         withPeer {session,files,peer ->
             assertEquals(8,session.state.value.negotiation!!.window)
@@ -76,6 +87,8 @@ class ProductionInteropTest {
             val token=session.state.value.access!!.token;assertTrue(token>0)
             peer.control("DECIDE $token 1");session.ping()
             assertEquals(SessionPhase.CONNECTED,session.state.value.phase)
+            val stale=BluetoothState(message="蓝牙链路已建立，请在手环确认ChaosConnect连接")
+            assertEquals("已连接 · 权限由手环控制",pairingStatus(stale,session.state.value).message)
             files.list("/data")
             try{files.mkdir("/data/not-allowed");fail()}catch(_:ProtocolException){}
             peer.control("ANDROID 0 3");session.ping();files.mkdir("/data/allowed")

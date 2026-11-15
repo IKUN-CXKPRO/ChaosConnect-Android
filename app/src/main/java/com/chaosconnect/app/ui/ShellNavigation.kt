@@ -21,7 +21,7 @@ class ShellNavigation(val stack: NavBackStack, val pager: PagerState,
     private var animationJob: Job? = null
     private var velocity = 0f
     fun select(index: Int) {
-        if(selected == index) return
+        if(index !in 0..4 || selected == index) return
         selection.intValue = index
         val initialVelocity = velocity
         animationJob?.cancel()
@@ -51,7 +51,7 @@ class ShellNavigation(val stack: NavBackStack, val pager: PagerState,
 @Composable
 fun rememberShellNavigation(): ShellNavigation {
     val stack = rememberNavBackStack<Route>(Route.Main)
-    val pager = rememberPagerState { 3 }
+    val pager = rememberPagerState { 5 }
     val selection = rememberSaveable { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val navigation = remember(stack,pager,selection,scope) { ShellNavigation(stack,pager,selection,scope) }

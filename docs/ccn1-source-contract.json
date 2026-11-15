@@ -20,23 +20,39 @@
     },
     {
       "path": "supervisor/bridge/chaos_files.c",
-      "sha256": "4f1d0bc3ab87526960e447d6e8908b4e5f6e69d004a99e903064968de4131781"
+      "sha256": "0f7e13b60d14a808e6dc2e642887c36b5a8266b4c5da294761885f4fbbfe82fe"
     },
     {
       "path": "supervisor/bridge/bridge.c",
-      "sha256": "dc72198e6c6c3e201232cf7005e5b8918fefaf72cc763e9c02c77f0cc3426b7b"
+      "sha256": "5326f44d010c95fcb626a20d6c1eab9a8cf1ad720c08c59c87948e73af9a8c1e"
     },
     {
       "path": "supervisor/bridge/android_radio.inc",
-      "sha256": "6009882dda82123c875a726ae93c94a3a145388a5a0faef53e233e957e29ad42"
+      "sha256": "0d4ae6be2074de577ecb657cc67e453b767cfa23456635e6fc6cd3ac08bcb362"
     },
     {
       "path": "supervisor/src/connect_permission.rs",
-      "sha256": "1e54ca74d1de45e3016f36e91e47aba04a2de852bb320f2885e5fb8602ab07ab"
+      "sha256": "21b2f326e8700964361a5d5b3ca54795c5752d5b6d8dfe99d7f7c767e08d5248"
     },
     {
       "path": "docs/CHAOSCONNECT-ANDROID.md",
       "sha256": "1feea51f3ea98a5abd733582ca5f25810ef47b882793903a7d7cf62203a47392"
+    },
+    {
+      "path": "supervisor/bridge/chaos_terminal.inc",
+      "sha256": "9b7edf32b767889bce0ef503f8f1f24f80cb55b37de6b203fa3474f816b5ae69"
+    },
+    {
+      "path": "supervisor/src/connect_nsh.rs",
+      "sha256": "60c8403d612477ea185015b859e075127674fbf9176649248163237f83a4dbf7"
+    },
+    {
+      "path": "supervisor/src/remote_nsh_engine.rs",
+      "sha256": "d239530faade6a92dc254a9161a656d26ec4a49e95e322740dbbfef82f648873"
+    },
+    {
+      "path": "docs/CHAOSCONNECT-NSH.md",
+      "sha256": "d2e96c3a0e5f5da2ebc942b5fe220fcff1c8b21bd4e516cff9f6f202b1720530"
     }
   ],
   "android": {
@@ -51,8 +67,17 @@
       "write": 2,
       "manage": 4,
       "developer": 8,
-      "control_reserved": 16
+      "control_reserved": 16,
+      "nsh": 32
+    },
+    "nsh": {
+      "capability": 16,
+      "open": 80,
+      "write": 81,
+      "read": 82,
+      "close": 83,
+      "header": "lease:u32LE state:u8 error:i32LE"
     }
   },
-  "moduleCommit": "50c9794c13a18cb4e20cd769c83fa9dd2d005eb1"
+  "moduleCommit": "5940dca8ee53b0fde623d3b74175940b39895dd9"
 }

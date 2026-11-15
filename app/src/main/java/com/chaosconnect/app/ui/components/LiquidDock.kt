@@ -16,7 +16,7 @@ fun LiquidDock(settings: AppSettings, selected: Int, backdrop: Backdrop, onSelec
     val c = LocalShellColors.current
     val haptic = LocalHapticFeedback.current
     FloatingBottomBar(
-        items = listOf("首页" to Glyph.HOME, "设备" to Glyph.DEVICES, "我的" to Glyph.PROFILE),
+        items = listOf("主页" to Glyph.HOME, "文件管理" to Glyph.FILES, "终端" to Glyph.TERMINAL, "连接" to Glyph.CONNECT, "我的" to Glyph.PROFILE),
         selectedIndex = { selected },
         onSelected = {
             if(settings.haptics) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)

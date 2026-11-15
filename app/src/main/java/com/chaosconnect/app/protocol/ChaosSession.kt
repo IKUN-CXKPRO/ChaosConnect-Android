@@ -14,6 +14,7 @@ object Op {
     const val OPEN_READ=0x10;const val READ=0x11;const val CLOSE_READ=0x12
     const val OPEN_WRITE=0x20;const val WRITE=0x21;const val COMMIT=0x22;const val ABORT=0x23
     const val PING=0x30;const val ECHO=0x31;const val SET_DEV=0x40;const val GET_DEV=0x41;const val GET_ACCESS=0x42;const val DISCONNECT=0x43
+    const val NSH_OPEN=0x50;const val NSH_WRITE=0x51;const val NSH_READ=0x52;const val NSH_CLOSE=0x53
 }
 data class Negotiation(val chunk:Int,val capabilities:Int,val maximumPath:Int,val window:Int)
 data class DevicePermission(val connected:Boolean,val developer:Boolean,val policy:Int,val authorization:Int,val token:Long) {
@@ -28,16 +29,17 @@ data class DevicePermission(val connected:Boolean,val developer:Boolean,val poli
     }
 }
 object MobilePermission {
-    const val READ=1;const val WRITE=2;const val MANAGE=4;const val DEVELOPER=8;const val CONTROL=16
+    const val READ=1;const val WRITE=2;const val MANAGE=4;const val DEVELOPER=8;const val CONTROL=16;const val NSH=32
     fun required(op:Int,payload:ByteArray):Int=when(op) {
         Op.LIST,Op.STAT,Op.OPEN_READ,Op.READ->READ
         Op.MKDIR,Op.OPEN_WRITE,Op.WRITE,Op.COMMIT->WRITE
         Op.REMOVE,Op.RMDIR,Op.RENAME->MANAGE
         Op.COPY->READ or WRITE
+        Op.NSH_OPEN,Op.NSH_WRITE,Op.NSH_READ,Op.NSH_CLOSE->NSH
         Op.SET_DEV->if(payload.firstOrNull()==1.toByte())DEVELOPER else 0
         else->0
     }
-    fun labels(mask:Long):String=listOf(READ to "读取文件",WRITE to "写入文件",MANAGE to "删除和重命名",DEVELOPER to "开发者模式",CONTROL to "设备控制（预留）")
+    fun labels(mask:Long):String=listOf(READ to "读取文件",WRITE to "写入文件",MANAGE to "删除和重命名",DEVELOPER to "开发者模式",CONTROL to "设备控制（预留）",NSH to "NSH终端")
         .filter {mask and it.first.toLong()!=0L}.joinToString("、") {it.second}.ifEmpty {"无文件或控制权限"}
 }
 data class AndroidAccess(val android:Boolean,val connectionPolicy:Int,val authorization:Int,val permissions:Long,val token:Long,val granted:Boolean) {
@@ -47,7 +49,7 @@ data class AndroidAccess(val android:Boolean,val connectionPolicy:Int,val author
         fun decode(bytes:ByteArray):AndroidAccess {
             val r=WireReader(bytes);val version=r.u8();val kind=r.u8();val policy=r.u8();val auth=r.u8()
             val mask=r.u32();val token=r.u32();val granted=r.u8();val reserved=List(3){r.u8()};r.end()
-            checkWire(version==1 && kind in 0..1 && policy in 0..2 && auth in 0..4 && mask and 31L.inv()==0L && granted in 0..1 && reserved.all{it==0},"Android授权状态无效")
+            checkWire(version==1 && kind in 0..1 && policy in 0..2 && auth in 0..4 && mask and 63L.inv()==0L && granted in 0..1 && reserved.all{it==0},"Android授权状态无效")
             checkWire(auth!=1 || token!=0L,"连接授权缺少token")
             checkWire(granted==0 || (auth==2 && policy!=1),"授权状态相互矛盾")
             return AndroidAccess(kind==1,policy,auth,mask,token,granted==1)
@@ -56,7 +58,8 @@ data class AndroidAccess(val android:Boolean,val connectionPolicy:Int,val author
 }
 enum class SessionPhase { DISCONNECTED, HANDSHAKING, AWAITING_APPROVAL, CONNECTED }
 data class SessionState(val phase:SessionPhase=SessionPhase.DISCONNECTED,val negotiation:Negotiation?=null,
-    val permission:DevicePermission?=null,val access:AndroidAccess?=null,val message:String="等待蓝牙连接与手环确认",val rejectedPackets:Long=0)
+    val permission:DevicePermission?=null,val access:AndroidAccess?=null,val message:String="等待蓝牙连接与手环确认",val rejectedPackets:Long=0,
+    val attempted:Boolean=false)
 class DeviceStatusException(val code:Int,val opcode:Int):Exception(statusText(code))
 fun statusText(code:Int):String = listOf("成功","请求格式错误","路径不存在","没有权限","目标已存在","不是目录","是目录","空间不足","设备忙或目录非空","读写失败","CRC 校验失败","偏移顺序错误","不支持","超出大小限制","等待手环授权").getOrElse(code){"设备错误 $code"}
 
@@ -80,7 +83,7 @@ class ChaosSession(private val transport:ChaosTransport,parentScope:CoroutineSco
 
     suspend fun connect():Negotiation {
         synchronized(lock) {check(!started && !closed);started=true}
-        mutableState.value=SessionState(phase=SessionPhase.HANDSHAKING,message="正在协商 CCN1")
+        mutableState.value=SessionState(phase=SessionPhase.HANDSHAKING,message="正在协商 CCN1",attempted=true)
         scope.launch(start=CoroutineStart.UNDISPATCHED) {
             try {for(bytes in transport.incoming)receive(bytes);close("设备链路已关闭")}
             catch(e:CancellationException){throw e}

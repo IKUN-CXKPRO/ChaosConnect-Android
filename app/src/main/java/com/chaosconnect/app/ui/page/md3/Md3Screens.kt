@@ -22,6 +22,11 @@ import androidx.compose.ui.unit.dp
 import com.chaosconnect.app.data.*
 import com.chaosconnect.app.protocol.*
 import com.chaosconnect.app.ui.components.*
+import com.chaosconnect.app.ui.ConnectionStatus
+import com.chaosconnect.app.ui.FileBrowserState
+import com.chaosconnect.app.ui.homeDeviceName
+import com.chaosconnect.app.ui.pairingStatus
+import com.chaosconnect.app.ui.connectionTitle
 import com.chaosconnect.app.ui.theme.LocalShellColors
 import androidx.compose.material3.*
 
@@ -48,83 +53,88 @@ private fun Menu(title: String, summary: String, icon: Glyph, tag: String, onCli
 }
 
 @Composable
-private fun Page(title: String, subtitle: String, back: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+private fun Page(title: String, subtitle: String, back: (() -> Unit)? = null, onSettings: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     val c=LocalShellColors.current
     val scrollBehavior=TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(modifier=Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),containerColor=c.background,
         contentWindowInsets=WindowInsets.safeDrawing,
         topBar={LargeFlexibleTopAppBar(title={Text(title)},navigationIcon={if(back!=null) IconButton(onClick=back,modifier=Modifier.semantics {contentDescription="返回"}) {GlyphIcon(Glyph.BACK)}},
+            actions={if(onSettings!=null) Row(
+                Modifier.clip(RoundedCornerShape(20.dp)).testTag("open_settings").clickable(role=Role.Button,onClick=onSettings)
+                    .heightIn(min=48.dp).padding(horizontal=16.dp),
+                verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                GlyphIcon(Glyph.SETTINGS,Modifier.size(20.dp)); Label("设置",15)
+            }},
             colors=TopAppBarDefaults.topAppBarColors(containerColor=c.background,scrolledContainerColor=c.background),scrollBehavior=scrollBehavior)}) {padding ->
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=padding.calculateTopPadding())
+        Column(Modifier.fillMaxSize().padding(top=padding.calculateTopPadding()).verticalScroll(rememberScrollState())
             .padding(horizontal=16.dp).padding(top=12.dp,bottom=132.dp),verticalArrangement=Arrangement.spacedBy(16.dp),content=content)
     }
 }
 
 @Composable
-fun Md3Home(onAdd: () -> Unit, onDevices: () -> Unit) {
-    val c = LocalShellColors.current
-    Page("ChaosConnect", "CHAOS ECOSYSTEM") {
-        Panel {
-            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                    Box(Modifier.size(7.dp).background(c.accent,CircleShape)); Label("你的设备连接空间",12,bold=true,color=c.accent)
+fun Md3Home(deviceName:String, status:ConnectionStatus, onConnect:()->Unit, onSettings:()->Unit) {
+    val c=LocalShellColors.current
+    Page("主页","CHAOSCONNECT",onSettings=onSettings) {
+        Panel(Modifier.testTag("home_device_card").clip(RoundedCornerShape(28.dp)).clickable(role=Role.Button,onClick=onConnect)) {
+            Column(Modifier.fillMaxWidth().heightIn(min=300.dp).padding(28.dp),verticalArrangement=Arrangement.SpaceBetween) {
+                Box(Modifier.size(72.dp).clip(RoundedCornerShape(24.dp)).background(c.accent.copy(alpha=.1f)),contentAlignment=Alignment.Center) {
+                    GlyphIcon(Glyph.DEVICES,Modifier.size(38.dp),c.accent)
                 }
-                Label("连接，\n从这里开始。",32,bold=true)
-                Label("让设备彼此相连，让体验更加简单。",14,muted=true)
-                ConnectionArtwork(Modifier.fillMaxWidth().height(184.dp))
-                Action("＋  添加第一台设备",onAdd,Modifier.fillMaxWidth().testTag("add_device"))
-                Label("CCN1 v1 文件桥 · 等待已认证设备链路",11,muted=true)
+                Spacer(Modifier.height(48.dp))
+                Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                    Label(deviceName,28,bold=true,modifier=Modifier.testTag("home_device_name"))
+                    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.size(7.dp).background(c.accent,CircleShape))
+                        Label(status.title,16,muted=true,modifier=Modifier.testTag("home_connection_status"))
+                    }
+                }
             }
-        }
-        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-            Label("我的设备",20,bold=true)
-            Label("管理设备  ›",12,modifier=Modifier.clip(RoundedCornerShape(8.dp)).clickable(role=Role.Button,onClick=onDevices).padding(8.dp),color=c.accent)
-        }
-        Panel {
-            Row(Modifier.padding(20.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(16.dp)) {
-                GlyphIcon(Glyph.DEVICES,Modifier.size(32.dp),c.muted)
-                Column {Label("还没有设备",16,bold=true);Label("添加后，在这里查看和管理。",13,muted=true)}
-            }
-        }
-        Row(horizontalArrangement=Arrangement.spacedBy(14.dp)) {
-            Panel(Modifier.weight(1f)) { Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {GlyphIcon(Glyph.CONNECT,color=c.accent);Label("随心连接",15,bold=true);Label("统一的设备入口",12,muted=true)} }
-            Panel(Modifier.weight(1f)) { Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {GlyphIcon(Glyph.PALETTE,color=c.accent);Label("两种风格",15,bold=true);Label("熟悉的个性体验",12,muted=true)} }
         }
     }
 }
 
 @Composable
-fun Md3Devices(devices: List<SavedDevice>, onAdd: () -> Unit) {
-    val c = LocalShellColors.current
-    Page("设备", "YOUR DEVICES") {
-        Label("所有设备，都在这里。",15,muted=true)
-        Panel {
-            Column(Modifier.fillMaxWidth().padding(28.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(18.dp)) {
-                ConnectionArtwork(Modifier.size(210.dp))
-                Label(if(devices.isEmpty()) "等待第一台设备" else "已保存的设备",22,bold=true)
-                Label("从一次连接开始，搭建你的 Chaos 生态。",13,muted=true)
-                Action("添加设备",onAdd,Modifier.fillMaxWidth().testTag("devices_add"))
+fun Md3Files(state:FileBrowserState,protocol:SessionState,onConnect:()->Unit,onRefresh:()->Unit,onParent:()->Unit,onMore:()->Unit,onEntry:(RemoteEntry)->Unit,onSettings:(()->Unit)?=null) {
+    val c=LocalShellColors.current
+    val connected=protocol.phase==SessionPhase.CONNECTED
+    val canRead=connected && (protocol.access?.allows(MobilePermission.READ)!=false)
+    Page("文件管理","FILES",onSettings=onSettings) {
+        if(!canRead) {
+            Panel {
+                Column(Modifier.fillMaxWidth().padding(28.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
+                    GlyphIcon(Glyph.FILES,Modifier.size(48.dp),c.accent)
+                    Label(if(connected)"尚未获得文件读取权限" else "连接手环后管理文件",22,bold=true)
+                    Label(if(connected)"请在手环的 ChaosConnect 权限设置中允许读取文件。" else "浏览手环目录，查看文件与文件夹。",14,muted=true)
+                    Action(if(connected)"查看连接状态" else "前往连接",onConnect,Modifier.fillMaxWidth().testTag("files_connect"))
+                }
             }
-        }
-        devices.forEach { device -> Panel { Column(Modifier.padding(20.dp)) {Label(device.name,16,bold=true);Label("已保存",12,muted=true)} } }
-        Row(Modifier.padding(4.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)) {GlyphIcon(Glyph.INFO,color=c.muted);Label("已实现 CCN1 文件协议，正在等待已认证的小米设备链路。",13,muted=true)}
-    }
-}
-
-@Composable
-fun Md3Profile(onSettings: () -> Unit, onAbout: () -> Unit) {
-    Page("我的", "MAKE IT YOURS") {
-        Panel {
-            Row(Modifier.padding(24.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(18.dp)) {
-                Logo(Modifier.size(72.dp))
-                Column {Label("欢迎来到 Chaos",22,bold=true);Label("每一次连接，都有新的可能。",13,muted=true)}
+        } else {
+            Panel {
+                Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                    Label(state.path,18,bold=true,modifier=Modifier.testTag("file_path"))
+                    Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                        if(state.path!="/") Action("上一级",onParent,Modifier.testTag("files_parent"))
+                        Action(if(state.loading)"正在读取…" else "刷新",{if(!state.loading)onRefresh()},Modifier.testTag("files_refresh"))
+                    }
+                    Label(if(state.loading)"正在读取目录" else "${state.entries.size} / ${state.total} 个项目",12,muted=true)
+                }
             }
+            state.message?.let {Label(it,14,muted=true,modifier=Modifier.testTag("files_error"))}
+            if(state.loaded && state.entries.isEmpty()) Panel {Label("此文件夹为空",16,muted=true,modifier=Modifier.padding(24.dp))}
+            state.entries.forEach {entry ->
+                Panel {
+                    Menu(entry.name,if(entry.directory)"文件夹" else "${entry.size} 字节",if(entry.directory)Glyph.FILES else Glyph.INFO,"file_${entry.name}") {if(!state.loading)onEntry(entry)}
+                }
+            }
+            if(state.hasMore)Action("加载更多",{if(!state.loading)onMore()},Modifier.fillMaxWidth().testTag("files_more"))
+            state.selectedStat?.let {stat -> Panel {
+                Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Label(state.selectedName.orEmpty(),20,bold=true)
+                    Label("大小：${stat.size} 字节",14)
+                    Label("修改时间：${java.time.Instant.ofEpochSecond(stat.modifiedAt).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}",13,muted=true)
+                }
+            }}
         }
-        Panel {
-            Menu("设置","外观、导航与交互",Glyph.SETTINGS,"open_settings",onSettings)
-            Menu("关于 ChaosConnect","版本 ${com.chaosconnect.app.BuildConfig.VERSION_NAME} · 预览版",Glyph.INFO,"open_about",onAbout)
-        }
-        Label("CONNECT YOUR CHAOS.",12,muted=true,modifier=Modifier.padding(start=8.dp,top=20.dp))
     }
 }
 
@@ -185,24 +195,46 @@ fun Md3ThemeScreen(settings: AppSettings, update: ((AppSettings) -> AppSettings)
 
 
 @Composable
-fun Md3Pairing(back: () -> Unit, onProtocol: () -> Unit, bluetooth:BluetoothState=BluetoothState(), onScan:()->Unit={}, onConnect:(String)->Unit={}) {
-    Page("连接设备", "CHAOSCONNECT",back) {
+fun Md3Connection(bluetooth:BluetoothState,onScan:()->Unit,onConnect:(String)->Unit,protocol:SessionState,onDisconnect:()->Unit,onProtocol:()->Unit,onSettings:()->Unit,onTheme:()->Unit={},onAbout:()->Unit={}) {
+    val status=pairingStatus(bluetooth,protocol)
+    val peers=BandDiscovery.visible(bluetooth.peers)
+    val c=LocalShellColors.current
+    Page("连接","CONNECT",onSettings=onSettings) {
         Panel {
-            Column(Modifier.padding(28.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
-                ConnectionArtwork(Modifier.fillMaxWidth().height(180.dp))
-                Label("ChaosConnect 文件桥",24,bold=true)
-                Label("在手环上打开 Chaos → ChaosConnect → 启用。",15)
-                Label("在手环进入“发起蓝牙配对”，保持配对窗口开启。搜索后点击手环，在系统提示中完成普通蓝牙配对，再到手环确认本次ChaosConnect会话。",14,muted=true)
-                Label(bluetooth.message,14,muted=true)
-                Label(BandDiscovery.HINT,12,muted=true)
-                Action(if(bluetooth.scanning)"重新搜索手环" else "搜索手环",onScan,Modifier.fillMaxWidth().testTag("scan_bluetooth"))
-                bluetooth.peers.forEach {peer ->
-                    Action("${peer.name} · ${if(peer.bonded) "已配对" else "配对并连接"}",{if(!bluetooth.connecting)onConnect(peer.address)},Modifier.fillMaxWidth())
+            Column(Modifier.fillMaxWidth().padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                Label(status.title,22,bold=true,modifier=Modifier.testTag("pair_connection_title"))
+                Label(status.message,14,muted=true,modifier=Modifier.testTag("pair_connection_status"))
+                if(protocol.phase!=SessionPhase.DISCONNECTED || bluetooth.connecting) {
+                    bluetooth.selectedPeer?.let {Label(it.name,16,bold=true)}
+                    Action("断开连接",onDisconnect,Modifier.fillMaxWidth().testTag("disconnect_bluetooth"))
+                } else {
+                    Action(if(bluetooth.scanning)"正在搜索…" else "搜索手环",{if(!bluetooth.scanning)onScan()},Modifier.fillMaxWidth().testTag("scan_bluetooth"))
                 }
-                Action("查看协议状态",onProtocol,Modifier.fillMaxWidth().testTag("pair_protocol"))
-                Label("专用普通蓝牙服务，权限由手环设置；配对不会自动授予文件或控制权限。",12,muted=true)
             }
         }
+        Label("附近的手环",16,bold=true,modifier=Modifier.padding(start=8.dp,top=8.dp))
+        if(peers.isEmpty()) {
+            Panel {
+                Column(Modifier.fillMaxWidth().padding(24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                    GlyphIcon(Glyph.CONNECT,Modifier.size(32.dp),c.accent)
+                    Label(if(bluetooth.scanning)"正在寻找手环" else "未发现手环",18,bold=true)
+                    Label("请在手环开启“发起蓝牙配对”，然后搜索。",14,muted=true)
+                }
+            }
+        } else peers.forEach {peer ->
+            val active=bluetooth.selectedPeer?.address==peer.address
+            Panel {
+                Column(Modifier.fillMaxWidth().padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                    Label(peer.name,18,bold=true)
+                    Label(peer.address,12,muted=true)
+                    Label(if(active && (protocol.attempted || bluetooth.connecting))status.title else if(peer.bonded)"已配对" else "未配对",13,muted=true)
+                    if(!bluetooth.connecting && protocol.phase==SessionPhase.DISCONNECTED)
+                        Action(if(peer.bonded)"连接" else "配对并连接",{onConnect(peer.address)},Modifier.fillMaxWidth().testTag("connect_${peer.address}"))
+                }
+            }
+        }
+        Label(BandDiscovery.HINT,12,muted=true,modifier=Modifier.padding(horizontal=8.dp))
+
     }
 }
 
@@ -212,7 +244,7 @@ fun Md3Protocol(state: SessionState, checked: Boolean?, onCheck: () -> Unit, onD
         Panel {
             Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 Label("CCN1 v1",28,bold=true)
-                Label(when(state.phase) {SessionPhase.CONNECTED->"设备已连接";SessionPhase.HANDSHAKING->"正在协商";SessionPhase.AWAITING_APPROVAL->"等待手环确认连接";else->"设备未连接"},18,bold=true)
+                Label(state.connectionTitle,18,bold=true)
                 Label(state.message,14,muted=true)
                 Label("承载：WearPacket OTHER / ChaosConnect",12,muted=true)
             }
@@ -226,7 +258,7 @@ fun Md3Protocol(state: SessionState, checked: Boolean?, onCheck: () -> Unit, onD
                 if(state.phase==SessionPhase.CONNECTED && state.access?.allows(MobilePermission.DEVELOPER)==true)
                     Action("请求开发者模式",onDeveloper,Modifier.fillMaxWidth())
                 Label("开发者模式：${state.permission?.let {if(it.developer) "已开启" else "已关闭"} ?: "等待设备状态"}")
-                Label("授权：${state.permission?.let {when(it.authorization){1->"等待手环确认";2->"本次已允许";3->"本次已拒绝";4->"授权超时";else->"无待处理请求"}} ?: "等待设备状态"}")
+                Label("开发者模式授权：${state.permission?.let {when(it.authorization){1->"等待手环确认";2->"本次已允许";3->"本次已拒绝";4->"授权超时";else->"无待处理请求"}} ?: "等待设备状态"}")
             }
         }
         Panel {
@@ -256,5 +288,26 @@ fun Md3About(back: () -> Unit) {
         }
         Panel {Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Label("为连接而生",20,bold=true);Label("Chaos 生态的全新设备入口。这个版本从一个简单、流畅、可定制的空间开始。",14,muted=true)}}
         Panel {Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Label("开源组件",16,bold=true);Label("Jetpack Compose · Material 3 · Miuix\nAndroidX Room · DataStore\nMiuix 使用 Apache License 2.0\n界面组件移植自 InstallerX Revived（GPL-3.0）",13,muted=true)}}
+    }
+}
+
+@Composable
+fun Md3Profile(onSettings:()->Unit,onProtocol:()->Unit,onAbout:()->Unit) {
+    Page("我的","PROFILE") {
+        Panel {Column(Modifier.fillMaxWidth().padding(24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+            Logo(Modifier.size(64.dp));Label("ChaosConnect",24,bold=true)
+            Label("连接你的手环，管理你的设备。",14,muted=true)
+        }}
+        Panel {
+            Menu("设置","应用偏好与外观",Glyph.SETTINGS,"profile_settings",onSettings)
+            Menu("连接详情","协议状态与手环授权",Glyph.CONNECT,"pair_protocol",onProtocol)
+            Menu("关于 ChaosConnect","版本 ${com.chaosconnect.app.BuildConfig.VERSION_NAME} · 开源许可",Glyph.INFO,"open_about",onAbout)
+        }
+    }
+}
+@Composable
+fun Md3Terminal(state:com.chaosconnect.app.ui.TerminalState,protocol:SessionState,onConnect:()->Unit,onStart:()->Unit,onStop:()->Unit,onSend:(String)->Unit,onInterrupt:()->Unit,onClear:()->Unit) {
+    Page("终端","NSH") {
+        TerminalConsole(state,protocol,onConnect,onStart,onStop,onSend,onInterrupt,onClear)
     }
 }

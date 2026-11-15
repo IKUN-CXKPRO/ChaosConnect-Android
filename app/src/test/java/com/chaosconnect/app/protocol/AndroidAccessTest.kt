@@ -3,6 +3,7 @@ package com.chaosconnect.app.protocol
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.*
+import com.chaosconnect.app.ui.pairingStatus
 import org.junit.Test
 import org.junit.Assert.*
 class AndroidAccessTest {
@@ -38,6 +39,24 @@ class AndroidAccessTest {
             try{session.ping();fail()}catch(_:ProtocolException){}
             assertEquals(SessionPhase.DISCONNECTED,session.state.value.phase);assertTrue(link.closed)
         }finally{session.close()}
+    }
+    @Test fun heartbeatRefreshesApprovalAndThePairingScreenWithoutAnotherRequest()=runTest {
+        val link=Link();val session=ChaosSession(link,backgroundScope,0x1234)
+        val carrier=BluetoothState(message="蓝牙链路已建立，请在手环确认ChaosConnect连接")
+        try {
+            session.connect();runCurrent()
+            assertEquals("等待手环确认连接",pairingStatus(carrier,session.state.value).title)
+            link.auth=2;link.granted=true
+            advanceTimeBy(1001);runCurrent()
+            assertEquals(SessionPhase.CONNECTED,session.state.value.phase)
+            assertEquals("设备已连接",pairingStatus(carrier,session.state.value).title)
+            assertEquals("已连接 · 权限由手环控制",pairingStatus(carrier,session.state.value).message)
+            link.auth=3;link.granted=false
+            advanceTimeBy(3001);runCurrent()
+            assertEquals(SessionPhase.DISCONNECTED,session.state.value.phase)
+            assertEquals("会话已断开",pairingStatus(carrier,session.state.value).title)
+            assertEquals("手环已拒绝或撤销Android连接",pairingStatus(carrier,session.state.value).message)
+        } finally {session.close()}
     }
     @Test fun malformedOrContradictoryGrantsAreRejected(){
         val link=Link();val correct=link.access();assertTrue(AndroidAccess.decode(correct).waiting)

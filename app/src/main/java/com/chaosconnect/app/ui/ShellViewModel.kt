@@ -22,17 +22,62 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     val protocol:StateFlow<SessionState> = protocolMutable.asStateFlow()
     private val checkMutable=MutableStateFlow<Boolean?>(null)
     val protocolCheck:StateFlow<Boolean?> = checkMutable.asStateFlow()
+    private val terminalController=TerminalController(viewModelScope)
+    val terminal=terminalController.state
+    fun startTerminal(){terminalController.start()}
+    fun stopTerminal(){terminalController.stop()}
+    fun sendTerminal(command:String){terminalController.sendCommand(command)}
+    fun interruptTerminal(){terminalController.interrupt()}
+    fun clearTerminal(){terminalController.clear()}
+    fun terminalVisible(visible:Boolean){terminalController.visible=visible}
     private var session:ChaosSession?=null
     private var sessionObserver:Job?=null
     var files:ChaosFiles?=null
         private set
+    private val browserMutable=MutableStateFlow(FileBrowserState())
+    val browser:StateFlow<FileBrowserState> = browserMutable.asStateFlow()
+    private var browserJob:Job?=null
+    private fun resetBrowser() {browserJob?.cancel();browserMutable.value=FileBrowserState()}
+    fun loadDirectory(path:String=browser.value.path,append:Boolean=false) {
+        if(browser.value.loading)return
+        if(protocol.value.phase!=SessionPhase.CONNECTED || protocol.value.access?.allows(MobilePermission.READ)==false)return
+        val client=files ?: return
+        val before=browser.value
+        val offset=if(append && path==before.path)before.entries.size else 0
+        browserMutable.value=before.copy(path=path,entries=if(offset>0)before.entries else emptyList(),
+            total=if(offset>0)before.total else 0,loading=true,loaded=offset>0,message=null,selectedName=null,selectedStat=null)
+        browserJob=viewModelScope.launch {
+            try {
+                val page=client.list(path,offset)
+                browserMutable.update{it.copy(entries=(if(offset>0)before.entries else emptyList())+page.entries,total=page.total,loading=false,loaded=true)}
+            }catch(e:CancellationException){throw e}
+            catch(e:Exception){browserMutable.update{it.copy(loading=false,message=e.message ?: "读取目录失败")}}
+        }
+    }
+    fun openFile(entry:RemoteEntry) {
+        if(entry.directory){loadDirectory(browser.value.child(entry.name));return}
+        if(browser.value.loading)return
+        val client=files ?: return
+        val path=browser.value.child(entry.name)
+        browserMutable.update{it.copy(loading=true,message=null,selectedName=null,selectedStat=null)}
+        browserJob=viewModelScope.launch {
+            try {val stat=client.stat(path);browserMutable.update{it.copy(loading=false,selectedName=entry.name,selectedStat=stat)}}
+            catch(e:CancellationException){throw e}
+            catch(e:Exception){browserMutable.update{it.copy(loading=false,message=e.message ?: "读取文件信息失败")}}
+        }
+    }
     private val bluetooth=ChaosBluetooth(application,viewModelScope) {transport,peer ->
         attachAuthenticatedTransport(transport,peer)
     }
     val bluetoothState=bluetooth.state
     fun scanBluetooth(){bluetooth.scan()}
     fun bluetoothPermissionDenied(){bluetooth.permissionDenied()}
-    fun connectBluetooth(address:String){session?.close();files=null;bluetooth.connect(address)}
+    fun connectBluetooth(address:String){
+        if(bluetooth.state.value.connecting)return
+        terminalController.bind(null);resetBrowser();sessionObserver?.cancel();session?.close();session=null;files=null
+        protocolMutable.value=SessionState()
+        bluetooth.connect(address)
+    }
     fun requestDeveloper(){viewModelScope.launch{try{session?.setDeveloper(true)}catch(e:CancellationException){throw e}catch(e:Exception){protocolMutable.update{it.copy(message=e.message ?: "请求失败")}}}}
     init {
         viewModelScope.launch {
@@ -43,12 +88,13 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     fun update(edit: (AppSettings) -> AppSettings) { edits.trySend(edit) }
     /** A real secure Bluetooth or authenticated host carrier; no mock peer is installed. */
     fun attachAuthenticatedTransport(transport:ChaosTransport,peer:BluetoothPeer?=null) {
-        sessionObserver?.cancel();session?.close();files=null
-        val active=ChaosSession(transport,viewModelScope);session=active
+        resetBrowser();sessionObserver?.cancel();session?.close();files=null
+        val active=ChaosSession(transport,viewModelScope);session=active;terminalController.bind(active)
         var catalogSaved=false
         sessionObserver=viewModelScope.launch {active.state.collect {state -> if(session===active) {
             protocolMutable.value=state
-            if(state.phase==SessionPhase.DISCONNECTED || state.phase==SessionPhase.AWAITING_APPROVAL)files=null
+            if(terminal.value.active && (state.phase!=SessionPhase.CONNECTED || state.access?.allows(MobilePermission.NSH)!=true))terminalController.revoke()
+            if(state.phase==SessionPhase.DISCONNECTED || state.phase==SessionPhase.AWAITING_APPROVAL){files=null;resetBrowser()}
             if(state.phase==SessionPhase.CONNECTED) {
                 if(files==null)files=ChaosFiles(active)
                 if(peer!=null && !catalogSaved){catalogSaved=true;app.database.devices().upsert(com.chaosconnect.app.data.SavedDevice(peer.address,peer.name,System.currentTimeMillis()))}
@@ -61,6 +107,6 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun checkProtocol() {checkMutable.value=CcnCodec.selfCheck()}
-    fun disconnectProtocol() {bluetooth.cancelConnection();session?.close();files=null}
-    override fun onCleared() {bluetooth.close();session?.close();super.onCleared()}
+    fun disconnectProtocol() {terminalController.bind(null);resetBrowser();bluetooth.cancelConnection();session?.close();files=null}
+    override fun onCleared() {terminalController.bind(null);bluetooth.close();session?.close();super.onCleared()}
 }

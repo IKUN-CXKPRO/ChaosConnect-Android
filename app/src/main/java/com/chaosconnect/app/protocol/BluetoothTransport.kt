@@ -65,7 +65,7 @@ class BluetoothTransport(private val socket:BluetoothSocket,parent:CoroutineScop
     override fun close(){if(closed.compareAndSet(false,true)){runCatching{socket.close()};queue.close();scope.cancel()}}
 }
 data class BluetoothPeer(val address:String,val name:String,val bonded:Boolean)
-data class BluetoothState(val peers:List<BluetoothPeer> = emptyList(),val scanning:Boolean=false,val connecting:Boolean=false,val message:String="请先在手环开启“发起蓝牙配对”")
+data class BluetoothState(val peers:List<BluetoothPeer> = emptyList(),val scanning:Boolean=false,val connecting:Boolean=false,val message:String="请先在手环开启“发起蓝牙配对”",val selectedPeer:BluetoothPeer?=null)
 @SuppressLint("MissingPermission")
 class ChaosBluetooth(private val context:Context,private val scope:CoroutineScope,private val connected:(ChaosTransport,BluetoothPeer)->Unit) {
     private val adapter get()=context.getSystemService(BluetoothManager::class.java)?.adapter
@@ -117,11 +117,11 @@ class ChaosBluetooth(private val context:Context,private val scope:CoroutineScop
                 val device=bt.getRemoteDevice(address)
                 val p=peer(device,mutableState.value.peers.find{it.address==address}?.name)
                     ?: error("仅支持 Xiaomi Smart Band 系列或 Chaos-Module 设备")
-                mutableState.update{it.copy(connecting=true,scanning=false,message="正在连接 ${p.name}，请完成系统蓝牙配对")}
+                mutableState.update{it.copy(connecting=true,scanning=false,selectedPeer=p,message="正在连接 ${p.name}，请完成系统蓝牙配对")}
                 socket=device.createRfcommSocketToServiceRecord(BluetoothTransport.SERVICE_UUID);pendingSocket=socket
                 withTimeout(60_000){socketIo(scope,socket){socket.connect()}}
                 val transport=BluetoothTransport(socket,scope);pendingSocket=null
-                mutableState.update{it.copy(connecting=false,message="蓝牙链路已建立，请在手环确认ChaosConnect连接")}
+                mutableState.update{it.copy(connecting=false,message="蓝牙链路已建立，正在协商ChaosConnect")}
                 connected(transport,p)
             }catch(e:CancellationException){runCatching{socket?.close()};throw e}
             catch(e:Exception){runCatching{socket?.close()};mutableState.update{it.copy(connecting=false,message=e.message ?: "连接失败")}}

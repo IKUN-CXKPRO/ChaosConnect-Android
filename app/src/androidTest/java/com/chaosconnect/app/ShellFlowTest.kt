@@ -4,6 +4,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.chaosconnect.app.data.*
@@ -24,7 +26,14 @@ class ShellFlowTest {
     private fun stored() = runBlocking { app.settings.settings.first() }
     private fun tap(tag: String) {
         val node=ui.onNodeWithTag(tag)
-        if(!tag.startsWith("tab_")) node.performScrollTo()
+        if(!tag.startsWith("tab_") && tag!="open_settings") {
+            node.performScrollTo()
+            // Floating Dock overlays the viewport edge; center the target before a physical tap.
+            val delta=node.fetchSemanticsNode().boundsInRoot.center.y-ui.onRoot().fetchSemanticsNode().boundsInRoot.center.y
+            ui.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange) and hasAnyDescendant(hasTestTag(tag)))
+                .performSemanticsAction(SemanticsActions.ScrollBy) {it(0f,delta)}
+            ui.waitForIdle()
+        }
         node.performClick()
         ui.waitForIdle()
     }
@@ -33,7 +42,7 @@ class ShellFlowTest {
         ui.runOnUiThread { ui.activity.onBackPressedDispatcher.onBackPressed() }
         ui.waitForIdle()
     }
-    private fun theme() { tap("tab_2"); tap("open_settings"); tap("open_theme") }
+    private fun theme() { tap("tab_4"); tap("profile_settings"); tap("open_theme") }
     private fun screenshot(name:String) {
         ui.onRoot().captureToImage().asAndroidBitmap().let {bitmap ->
             File(ui.activity.filesDir,"$name.png").outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
@@ -51,19 +60,31 @@ class ShellFlowTest {
             ui.waitForIdle()
             tap("tab_0")
             screenshot(if(miuix) "miuix-home" else "md3-home")
-            tap("add_device")
-            ui.onNodeWithTag("pair_protocol").assertIsDisplayed()
+            tap("home_device_card")
+            ui.onNodeWithTag("pair_connection_title").assertIsDisplayed()
+            ui.onNodeWithTag("pair_protocol").assertDoesNotExist()
+            tap("tab_4")
             tap("pair_protocol")
             tap("check_protocol")
             ui.onNodeWithText("帧与承载向量一致").assertIsDisplayed()
             screenshot(if(miuix) "miuix-protocol" else "md3-protocol")
             back()
-            back()
             tap("tab_1")
-            ui.onNodeWithText("等待第一台设备").assertIsDisplayed()
-            tap("tab_2")
+            ui.onNodeWithText("连接手环后管理文件").assertIsDisplayed()
+            tap("open_settings")
+            tap("settings_about")
+            ui.onNodeWithText("${BuildConfig.VERSION_NAME} · 预览版").assertIsDisplayed()
+            back()
+            back()
+            tap("tab_4")
             tap("open_about")
-            ui.onNodeWithText("0.2.0 · 预览版").assertIsDisplayed()
+            ui.onNodeWithText("${BuildConfig.VERSION_NAME} · 预览版").assertIsDisplayed()
+            back()
+            ui.onNodeWithTag("connection_theme").assertDoesNotExist()
+            tap("profile_settings")
+            tap("open_theme")
+            ui.onNodeWithTag(if(miuix) "style_miuix" else "style_md3").assertIsSelected()
+            back()
             back()
         }
         assertTrue(runBlocking {app.database.devices().observeAll().first()}.isEmpty())
@@ -95,13 +116,13 @@ class ShellFlowTest {
             runBlocking { app.settings.update(AppSettings(useMiuix=miuix,dynamicColor=false,haptics=false)) }
             ui.waitForIdle()
             val dock=ui.onNodeWithTag("dock")
-            dock.performTouchInput {down(Offset(width/6f,height/2f));moveTo(Offset(width*5/6f,height/2f),500)}
+            dock.performTouchInput {down(Offset(width/10f,height/2f));moveTo(Offset(width*9/10f,height/2f),500)}
             ui.waitForIdle()
-            ui.onNodeWithTag("tab_2").assertIsSelected()
-            ui.onNodeWithTag("open_settings").assertIsDisplayed()
+            ui.onNodeWithTag("tab_4").assertIsSelected()
+            ui.onNodeWithTag("profile_settings").assertIsDisplayed()
             dock.performTouchInput {moveTo(Offset(width/2f,height/2f),500)}
             ui.waitForIdle()
-            ui.onNodeWithTag("tab_1").assertIsSelected()
+            ui.onNodeWithTag("tab_2").assertIsSelected()
             dock.performTouchInput {up()}
             ui.waitForIdle()
         }
@@ -113,9 +134,9 @@ class ShellFlowTest {
         waitSetting {!it.instantDock}
         back();back()
         val dock=ui.onNodeWithTag("dock")
-        dock.performTouchInput {down(Offset(width*5/6f,height/2f));moveTo(Offset(width/6f,height/2f),500)}
+        dock.performTouchInput {down(Offset(width*9/10f,height/2f));moveTo(Offset(width/10f,height/2f),500)}
         ui.waitForIdle()
-        ui.onNodeWithTag("tab_2").assertIsSelected()
+        ui.onNodeWithTag("tab_4").assertIsSelected()
         dock.performTouchInput {up()}
         ui.waitForIdle()
         ui.onNodeWithTag("tab_0").assertIsSelected()
