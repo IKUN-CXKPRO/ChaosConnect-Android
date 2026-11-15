@@ -75,26 +75,35 @@ class ChaosBluetooth(private val context:Context,private val scope:CoroutineScop
     private var connecting:Job?=null
     private var pendingSocket:BluetoothSocket?=null
     private fun permitted()=listOf(Manifest.permission.BLUETOOTH_CONNECT,Manifest.permission.BLUETOOTH_SCAN).all{context.checkSelfPermission(it)==PackageManager.PERMISSION_GRANTED}
-    private fun peer(device:BluetoothDevice)=BluetoothPeer(device.address,device.name?.takeIf{it.isNotBlank()} ?: device.address,device.bondState==BluetoothDevice.BOND_BONDED)
-    private fun add(device:BluetoothDevice){if(device.type==BluetoothDevice.DEVICE_TYPE_LE)return;val p=peer(device);mutableState.update{it.copy(peers=(it.peers.filterNot{old->old.address==p.address}+p).sortedBy{v->v.name})}}
+    private fun peer(device:BluetoothDevice,advertisedName:String?=null):BluetoothPeer? {
+        val name=BandDiscovery.name(device.name) ?: BandDiscovery.name(advertisedName) ?: return null
+        return BluetoothPeer(device.address,name,device.bondState==BluetoothDevice.BOND_BONDED)
+    }
+    private fun add(device:BluetoothDevice,advertisedName:String?=null){
+        if(device.type==BluetoothDevice.DEVICE_TYPE_LE)return
+        val p=peer(device,advertisedName) ?: return
+        mutableState.update{it.copy(peers=BandDiscovery.visible(it.peers.filterNot{old->old.address==p.address}+p))}
+    }
     private val receiver=object:BroadcastReceiver(){override fun onReceive(context:Context,intent:Intent){
         if(!permitted())return
         when(intent.action){
-            BluetoothDevice.ACTION_FOUND,BluetoothDevice.ACTION_BOND_STATE_CHANGED->intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE,BluetoothDevice::class.java)?.let{add(it)}
-            BluetoothAdapter.ACTION_DISCOVERY_FINISHED->mutableState.update{if(it.scanning)it.copy(scanning=false,message="搜索完成，可点击手环连接；也可重新搜索")else it}
+            BluetoothDevice.ACTION_FOUND,BluetoothDevice.ACTION_BOND_STATE_CHANGED,BluetoothDevice.ACTION_NAME_CHANGED->intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE,BluetoothDevice::class.java)?.let{add(it,intent.getStringExtra(BluetoothDevice.EXTRA_NAME))}
+            BluetoothAdapter.ACTION_DISCOVERY_FINISHED->mutableState.update{if(it.scanning)it.copy(scanning=false,message=if(it.peers.isEmpty())"未找到手环（Xiaomi Smart Band / Chaos-Module），请确认手环已开启配对" else "搜索完成，选择手环连接")else it}
         }
     }}
     fun permissionDenied(){mutableState.update{it.copy(message="请允许附近设备权限后再搜索")}}
     fun scan(){
         if(!permitted()){permissionDenied();return}
+        if(mutableState.value.connecting)return
         try {
             val bt=adapter ?: error("手机不支持蓝牙")
             check(bt.isEnabled){"请先在系统设置开启蓝牙"}
-            if(!registered){context.registerReceiver(receiver,IntentFilter().apply{addAction(BluetoothDevice.ACTION_FOUND);addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)},Context.RECEIVER_EXPORTED);registered=true}
-            bt.bondedDevices.forEach{add(it)}
+            if(!registered){context.registerReceiver(receiver,IntentFilter().apply{addAction(BluetoothDevice.ACTION_FOUND);addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);addAction(BluetoothDevice.ACTION_NAME_CHANGED);addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)},Context.RECEIVER_EXPORTED);registered=true}
             if(bt.isDiscovering)bt.cancelDiscovery()
+            mutableState.update{it.copy(peers=emptyList())}
+            bt.bondedDevices.forEach{add(it)}
             check(bt.startDiscovery()){ "无法开始搜索，请稍后重试" }
-            mutableState.update{it.copy(scanning=true,message="正在搜索普通蓝牙设备，请保持手环配对窗口开启")}
+            mutableState.update{it.copy(scanning=true,message="正在搜索手环（Xiaomi Smart Band / Chaos-Module），请保持手环配对窗口开启")}
         }catch(e:Exception){mutableState.update{it.copy(scanning=false,message=e.message ?: "蓝牙搜索失败")}}
     }
     fun connect(address:String){
@@ -105,7 +114,9 @@ class ChaosBluetooth(private val context:Context,private val scope:CoroutineScop
             try {
                 check(BluetoothAdapter.checkBluetoothAddress(address)){"蓝牙地址无效"}
                 val bt=adapter ?: error("手机不支持蓝牙");bt.cancelDiscovery()
-                val device=bt.getRemoteDevice(address);val p=peer(device)
+                val device=bt.getRemoteDevice(address)
+                val p=peer(device,mutableState.value.peers.find{it.address==address}?.name)
+                    ?: error("仅支持 Xiaomi Smart Band 系列或 Chaos-Module 设备")
                 mutableState.update{it.copy(connecting=true,scanning=false,message="正在连接 ${p.name}，请完成系统蓝牙配对")}
                 socket=device.createRfcommSocketToServiceRecord(BluetoothTransport.SERVICE_UUID);pendingSocket=socket
                 withTimeout(60_000){socketIo(scope,socket){socket.connect()}}

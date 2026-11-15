@@ -195,6 +195,7 @@ fun MiuixPairing(back: () -> Unit, onProtocol: () -> Unit, bluetooth:BluetoothSt
                 Label("在手环上打开 Chaos → ChaosConnect → 启用。",15)
                 Label("在手环进入“发起蓝牙配对”，保持配对窗口开启。搜索后点击手环，在系统提示中完成普通蓝牙配对，再到手环确认本次ChaosConnect会话。",14,muted=true)
                 Label(bluetooth.message,14,muted=true)
+                Label(BandDiscovery.HINT,12,muted=true)
                 Action(if(bluetooth.scanning)"重新搜索手环" else "搜索手环",onScan,Modifier.fillMaxWidth().testTag("scan_bluetooth"))
                 bluetooth.peers.forEach {peer ->
                     Action("${peer.name} · ${if(peer.bonded) "已配对" else "配对并连接"}",{if(!bluetooth.connecting)onConnect(peer.address)},Modifier.fillMaxWidth())
