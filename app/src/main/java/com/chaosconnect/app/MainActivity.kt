@@ -1,0 +1,38 @@
+package com.chaosconnect.app
+
+import android.os.Bundle
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.chaosconnect.app.ui.ShellApp
+import com.chaosconnect.app.ui.ShellViewModel
+import com.chaosconnect.app.ui.rememberShellNavigation
+import com.chaosconnect.app.ui.theme.AppTheme
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            val vm: ShellViewModel = viewModel()
+            val settings by vm.settings.collectAsStateWithLifecycle()
+            val devices by vm.devices.collectAsStateWithLifecycle()
+            val protocol by vm.protocol.collectAsStateWithLifecycle()
+            val bluetooth by vm.bluetoothState.collectAsStateWithLifecycle()
+            val permissions=rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){result ->
+                if(result.values.all{it})vm.scanBluetooth() else vm.bluetoothPermissionDenied()
+            }
+            val protocolCheck by vm.protocolCheck.collectAsStateWithLifecycle()
+            val navigation = rememberShellNavigation()
+            settings?.let { current ->
+                AppTheme(current) { ShellApp(current, devices, vm::update, navigation,protocol,protocolCheck,vm::checkProtocol,vm::disconnectProtocol,bluetooth,{permissions.launch(arrayOf(Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT))},vm::connectBluetooth,vm::requestDeveloper) }
+            }
+        }
+    }
+}

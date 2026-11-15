@@ -1,0 +1,113 @@
+[
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/library/FloatingBottomBar.kt",
+    "upstreamSha256": "3642791b027c7ad047c24c215774e3253b11c91981032316e9249f97f52654d8",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/library/FloatingBottomBar.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/library/liquid/CombinedBackdrop.kt",
+    "upstreamSha256": "fdcc47b9da5c1f86cbcb00688fc7dfc214359ed7ece9f063397540e7e8d3f492",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/library/liquid/CombinedBackdrop.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/library/liquid/InnerShadow.kt",
+    "upstreamSha256": "acb8bf2660c02e34e33d5a6ac71d1b3e6176a13375ceb6ad977c0bc0186f087f",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/library/liquid/InnerShadow.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/library/liquid/Lens.kt",
+    "upstreamSha256": "205e7dbff2cf0c80c37098852cafee9655b297e18e902d9d8ecb7dcf128298d3",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/library/liquid/Lens.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/library/liquid/Vibrancy.kt",
+    "upstreamSha256": "5c4b2ba700230a9ab87894b50fec676915273b1360cbe638c1f67e89974cec78",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/library/liquid/Vibrancy.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/animation/DampedDragAnimation.kt",
+    "upstreamSha256": "cf2f558e13d71315c4c578cdbfc7b68716dcc8b002fc9b629505b28e2b4edda2",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/animation/DampedDragAnimation.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/animation/InteractiveHighlight.kt",
+    "upstreamSha256": "22232362eb9f9d5888837e33a92b920565570373cc67280f91c826b5c7985934",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/animation/InteractiveHighlight.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/util/DragGestureInspector.kt",
+    "upstreamSha256": "6a4fa9a506feb37558730d32bedeb5d392162778429e6fcafad357b2a16b46f4",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/util/DragGestureInspector.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/theme/Shape.kt",
+    "upstreamSha256": "2dcc3f62a6366d9bd494a91546d0b99fddd2cd19d90f1e1c1fda8ea12ed57a4f",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/theme/Shape.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/theme/Type.kt",
+    "upstreamSha256": "dcb91928423742b374c6f40c6a47b78c49fa4aec5dd36589017c6d0aa03784d7",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/theme/Type.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/main/widget/setting/SegmentedColumn.kt",
+    "upstreamSha256": "4930aa2e936948e776b1b9fae070c2cf7d06c9cc6dc601eb4ca85ab02d8213d3",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/page/main/widget/setting/SegmentedColumn.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/main/widget/setting/BaseWidget.kt",
+    "upstreamSha256": "561a2c91a4b6b772172ccd6aa0fa858e4bd4b27062ffa2913539264388421e8b",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/page/main/widget/setting/BaseWidget.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/main/widget/setting/BaseItemContainer.kt",
+    "upstreamSha256": "7650c7a08849a821f5354d4a1d86d4fd2dfa175e6d3f618b8b88879c3a1d664f",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/page/main/widget/setting/BaseItemContainer.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/main/widget/setting/SegmentedHeight.kt",
+    "upstreamSha256": "bf01d161300d2e333319d68851a4c9eddd13ea563dbf74c0e77a532df32e1dab",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/page/main/widget/setting/SegmentedHeight.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/main/widget/setting/RadioButtonWidget.kt",
+    "upstreamSha256": "185781a779ed928e00a960863f853784781db3c1fcc188347d4e307023ac83e1",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/page/main/widget/setting/RadioButtonWidget.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/main/widget/setting/SwitchWidget.kt",
+    "upstreamSha256": "192b81f9962e24b14c785f07ff74802844d9635c70043a2bfc5aa1e85e8c8c28",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/page/main/widget/setting/SwitchWidget.kt"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/miuix/widgets/MiuixBaseWidget.kt",
+    "upstreamSha256": "c016fa7925bbd853ef2714fc02c3a5b0747065ef7cc3de519037e206457318ff",
+    "destination": "app/src/main/java/com/chaosconnect/app/ui/port/page/miuix/widgets/MiuixSwitchWidget.kt",
+    "scope": "MiuixSwitchWidget only"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/main/widget/setting/ListItemMotion.kt",
+    "upstreamSha256": "5bab8b9cbfef87ee9e14cc56d947628058e80b77a78b291f7280a720bb0b5fe7",
+    "scope": "UI pattern or extracted component; see source comments"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/theme/material/ThemeExt.kt",
+    "upstreamSha256": "c89b332df5606336b85ad804d22250e8a8d5ca48bd1041b21606c43820a8d1c3",
+    "scope": "UI pattern or extracted component; see source comments"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/theme/InstallerTheme.kt",
+    "upstreamSha256": "bea6736f9a48dcda9d45242348ebb9a15a7abef6ea8904d8af30d42ce68f4a39",
+    "scope": "UI pattern or extracted component; see source comments"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/main/settings/SettingsPage.kt",
+    "upstreamSha256": "93fe19e87bb672092ff54a60e3356d49f4391f251fa85bb22bd0cf735cbac69c",
+    "scope": "UI pattern or extracted component; see source comments"
+  },
+  {
+    "upstream": "/Users/ikun_cxkpro/Downloads/InstallerX-Revived-main/app/src/main/java/com/rosan/installer/ui/page/miuix/settings/MiuixSettingsPage.kt",
+    "upstreamSha256": "0a9ec9640084cb8cacf6e27d7d5341b4b731f6256fa2863c7e8d7cdc6174de44",
+    "scope": "UI pattern or extracted component; see source comments"
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "version": "0.3.0",
+  "date": "2026-11-15",
+  "apk_sha256": "694a4be190c44270f5036e00720d20d700e2d77d478f53f11517504a3e4e64e4",
+  "apk_bytes": 41444439,
+  "jvm": [
+    {
+      "name": "com.chaosconnect.app.protocol.AndroidAccessTest",
+      "tests": "2",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.protocol.CodecTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.protocol.ProductionInteropTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.chaosconnect.app.protocol.SessionTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "instrumentation": [
+    {
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.000",
+      "timestamp": "2026-11-15T10:02:22",
+      "hostname": "localhost"
+    }
+  ],
+  "wireless_hardware_verified": false,
+  "module_commit": "50c9794c13a18cb4e20cd769c83fa9dd2d005eb1"
+}

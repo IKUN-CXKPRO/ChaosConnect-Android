@@ -1,0 +1,58 @@
+{
+  "sourceRoot": "/Users/ikun_cxkpro/Projects/Chaos-Module",
+  "reviewDate": "2026-11-15",
+  "files": [
+    {
+      "path": "docs/24-FILE-BRIDGE.md",
+      "sha256": "7320a47ee79f0fc00e38ca7e085cca748cc8ec24eaa7052c3e6234beb4d52992"
+    },
+    {
+      "path": "docs/CHAOSCONNECT-V1.hex",
+      "sha256": "b069eb95b61da3ba176a27423d7778ffbb7698493919116ef4665780f93e890d"
+    },
+    {
+      "path": "supervisor/bridge/chaos_connect.c",
+      "sha256": "3290188eb9b59dd52724056dfc6fe8e9da9cb210814bef4209529568ff1b7332"
+    },
+    {
+      "path": "supervisor/bridge/chaos_connect.h",
+      "sha256": "c699d43e48ef7659c73f866686a0baf45778b753cae9e30240185c15d6a3e9e3"
+    },
+    {
+      "path": "supervisor/bridge/chaos_files.c",
+      "sha256": "4f1d0bc3ab87526960e447d6e8908b4e5f6e69d004a99e903064968de4131781"
+    },
+    {
+      "path": "supervisor/bridge/bridge.c",
+      "sha256": "dc72198e6c6c3e201232cf7005e5b8918fefaf72cc763e9c02c77f0cc3426b7b"
+    },
+    {
+      "path": "supervisor/bridge/android_radio.inc",
+      "sha256": "6009882dda82123c875a726ae93c94a3a145388a5a0faef53e233e957e29ad42"
+    },
+    {
+      "path": "supervisor/src/connect_permission.rs",
+      "sha256": "1e54ca74d1de45e3016f36e91e47aba04a2de852bb320f2885e5fb8602ab07ab"
+    },
+    {
+      "path": "docs/CHAOSCONNECT-ANDROID.md",
+      "sha256": "1feea51f3ea98a5abd733582ca5f25810ef47b882793903a7d7cf62203a47392"
+    }
+  ],
+  "android": {
+    "hello": "CCA1",
+    "capability": 8,
+    "get_access": 66,
+    "disconnect": 67,
+    "uuid": "43434e31-0001-4a10-8000-4348414f5301",
+    "stream": "u32LE length + WearPacket",
+    "permissions": {
+      "read": 1,
+      "write": 2,
+      "manage": 4,
+      "developer": 8,
+      "control_reserved": 16
+    }
+  },
+  "moduleCommit": "50c9794c13a18cb4e20cd769c83fa9dd2d005eb1"
+}
