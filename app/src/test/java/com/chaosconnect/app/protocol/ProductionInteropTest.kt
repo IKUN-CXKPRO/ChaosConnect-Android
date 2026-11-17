@@ -40,6 +40,59 @@ class ProductionInteropTest {
         val peer=Peer(root!!);val session=ChaosSession(peer,this,prefix=0x1234)
         try {peer.control("ANDROID $connectionPolicy $mask");session.connect();block(session,ChaosFiles(session),peer)}finally {session.close()}
     }
+    @Test fun nativeCInstallsBothWebDeliveryPackagesWithReadOnlyFilePermission()=runBlocking {
+        withPeer(mask=1){session,files,peer->
+            peer.control("INSTALL 0")
+            for(kind in listOf("font","icons")){
+                val local=File.createTempFile("web-package-",".bin")
+                try{
+                    local.writeBytes(javaClass.getResourceAsStream("/delivery/web-$kind.bin")!!.readBytes())
+                    val pack=DeliveryPackageReader.parse(local);val progress=mutableListOf<InstallProgress>()
+                    ChaosPackageInstaller(session).install(pack){progress.add(it)}
+                    assertEquals(6,progress.last().state);assertEquals(pack.total,progress.last().done)
+                    val directory=if(kind=="font")"/data/chaos/font" else "/data/chaos/icons"
+                    val index=ByteArrayOutputStream();files.download("$directory/index.txt",index)
+                    assertTrue(index.toString("UTF-8").contains(pack.name))
+                    val installed=ByteArrayOutputStream();files.download(if(kind=="font")"$directory/st1.ttf" else "$directory/01/app.bin",installed)
+                    val e=pack.entries.single();val expected=local.readBytes().copyOfRange(e.offset.toInt(),e.offset.toInt()+e.size)
+                    assertArrayEquals(expected,installed.toByteArray())
+                }finally{local.delete()}
+            }
+            assertEquals(0,peer.writes);assertEquals(0,peer.commits)
+        }
+    }
+    @Test fun nativeCNamedApprovalAndCancelLeavePreviousResourcesIntact()=runBlocking {
+        withPeer(mask=1){session,files,peer->
+            val local=File.createTempFile("web-approved-",".bin")
+            try{
+                local.writeBytes(javaClass.getResourceAsStream("/delivery/web-font.bin")!!.readBytes());val pack=DeliveryPackageReader.parse(local)
+                peer.control("INSTALL 2");val waiting=CompletableDeferred<Unit>()
+                val install=async{ChaosPackageInstaller(session).install(pack){if(it.state==1)waiting.complete(Unit)}}
+                withTimeout(5_000){waiting.await()};peer.control("DECIDE 1 1");withTimeout(5_000){install.await()}
+                val index=ByteArrayOutputStream();files.download("/data/chaos/font/index.txt",index);assertTrue(index.toString("UTF-8").contains("文楷"))
+                val nextWaiting=CompletableDeferred<Unit>()
+                val cancel=launch{ChaosPackageInstaller(session).install(pack){if(it.state==1)nextWaiting.complete(Unit)}}
+                withTimeout(5_000){nextWaiting.await()};cancel.cancelAndJoin()
+                val after=ByteArrayOutputStream();files.download("/data/chaos/font/index.txt",after);assertArrayEquals(index.toByteArray(),after.toByteArray())
+                session.ping();assertEquals(SessionPhase.CONNECTED,session.state.value.phase)
+            }finally{local.delete()}
+        }
+    }
+    @Test fun nativeCUserMustApproveNamedInstallAndCanRejectIt()=runBlocking {
+        withPeer(mask=1){session,_,peer->
+            val local=File.createTempFile("web-consent-",".bin")
+            try{
+                local.writeBytes(javaClass.getResourceAsStream("/delivery/web-font.bin")!!.readBytes());val pack=DeliveryPackageReader.parse(local)
+                peer.control("INSTALL 2")
+                val pending=CompletableDeferred<Unit>()
+                val job=async{runCatching{ChaosPackageInstaller(session).install(pack){if(it.state==1)pending.complete(Unit)}}}
+                withTimeout(5_000){pending.await()}
+                // The first install consumes token 1 in this fresh C peer.
+                peer.control("DECIDE 1 2")
+                assertTrue(job.await().isFailure);session.ping();assertEquals(SessionPhase.CONNECTED,session.state.value.phase)
+            }finally{local.delete()}
+        }
+    }
     @Test fun nativeCLinkSpeedChecksEchoAndDoesNotWriteFiles()=runBlocking {
         withPeer(mask=1) {session,files,_ ->
             coroutineScope {

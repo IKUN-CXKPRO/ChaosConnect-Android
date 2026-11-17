@@ -12,8 +12,8 @@ android {
         applicationId = "com.chaosconnect.app"
         minSdk = 33
         targetSdk = 37
-        versionCode = 9
-        versionName = "0.5.2"
+        versionCode = 10
+        versionName = "0.6.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true; buildConfig = true }

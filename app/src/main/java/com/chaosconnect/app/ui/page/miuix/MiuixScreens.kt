@@ -331,9 +331,10 @@ private fun QuickFeature(title:String,summary:String,icon:Glyph,tag:String,modif
     }
 }
 @Composable
-fun MiuixFunctions(onFiles:()->Unit,onTerminal:()->Unit) {
+fun MiuixFunctions(onFiles:()->Unit,onTerminal:()->Unit,onPackage:()->Unit={}) {
     Page("功能列表","FUNCTIONS") {
         Panel {
+            Menu("安装投递包","选择制作台输出的字体／图标 .bin",Glyph.PLUS,"functions_package",onPackage)
             Menu("文件管理","浏览目录与查看文件",Glyph.FILES,"functions_files",onFiles)
             Menu("NSH终端","连接手环原生终端",Glyph.TERMINAL,"functions_terminal",onTerminal)
         }
@@ -354,4 +355,9 @@ fun MiuixSpeedTest(state:com.chaosconnect.app.ui.SpeedTestState,protocol:Session
         if(protocol.phase!=SessionPhase.CONNECTED)Action("前往连接",onConnect,Modifier.fillMaxWidth().testTag("speed_connect"))
         else Action(if(state.running)"停止测速" else "开始测速",if(state.running)onStop else onStart,Modifier.fillMaxWidth().testTag("speed_start_stop"))
     }
+}
+
+@Composable
+fun MiuixPackageInstall(state:com.chaosconnect.app.ui.PackageInstallState,connected:Boolean,onChoose:()->Unit,onInstall:()->Unit,onConfirm:()->Unit,onCancel:()->Unit,onStop:()->Unit,onConnect:()->Unit,back:()->Unit){
+    Page("安装投递包","DELIVERY PACKAGE",back){PackageInstallContent(state,connected,onChoose,onInstall,onConfirm,onCancel,onStop,onConnect)}
 }

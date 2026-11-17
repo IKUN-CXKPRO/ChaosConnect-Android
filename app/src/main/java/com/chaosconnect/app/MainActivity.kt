@@ -31,11 +31,13 @@ class MainActivity : ComponentActivity() {
             val permissions=rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){result ->
                 if(result.values.all{it})vm.scanBluetooth() else vm.bluetoothPermissionDenied()
             }
+            val packageInstall by vm.packageInstall.collectAsStateWithLifecycle()
+            val packagePicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)vm.selectPackage(uri)}
             val protocolCheck by vm.protocolCheck.collectAsStateWithLifecycle()
             val navigation = rememberShellNavigation()
             settings?.let { current ->
                 AppTheme(current) { ShellApp(current, devices, vm::update, navigation,protocol,protocolCheck,vm::checkProtocol,vm::disconnectProtocol,bluetooth,{permissions.launch(arrayOf(Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT))},vm::connectBluetooth,vm::requestDeveloper,
-                    browser,{vm.loadDirectory()},{vm.loadDirectory(browser.parent)},{vm.loadDirectory(append=true)},vm::openFile,terminal,vm::startTerminal,vm::stopTerminal,vm::sendTerminal,vm::interruptTerminal,vm::clearTerminal,vm::terminalVisible,speedTest,vm::startSpeedTest,vm::stopSpeedTest) }
+                    browser,{vm.loadDirectory()},{vm.loadDirectory(browser.parent)},{vm.loadDirectory(append=true)},vm::openFile,terminal,vm::startTerminal,vm::stopTerminal,vm::sendTerminal,vm::interruptTerminal,vm::clearTerminal,vm::terminalVisible,speedTest,vm::startSpeedTest,vm::stopSpeedTest,packageInstall,{packagePicker.launch(arrayOf("*/*"))},vm::askPackageInstall,vm::installPackage,vm::dismissPackageInstall,vm::stopPackageInstall) }
             }
         }
     }

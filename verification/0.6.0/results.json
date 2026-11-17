@@ -1,0 +1,28 @@
+{
+  "version": "0.6.0",
+  "versionCode": 10,
+  "tests": {
+    "jvm": {
+      "tests": 41,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    "ui": {
+      "tests": 14,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    }
+  },
+  "lint": {
+    "Error": 0,
+    "Warning": 13
+  },
+  "apk": {
+    "name": "app-debug.apk",
+    "bytes": 41788503,
+    "sha256": "2ddc6435be47578943231974556629d94e311edb720de41514be6ef9f191b5e5"
+  },
+  "hardwareInstallationTested": false
+}

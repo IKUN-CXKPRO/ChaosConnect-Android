@@ -27,6 +27,7 @@ with tempfile.TemporaryDirectory(prefix='chaos-android-peer-') as work:
             parts = line.strip().split()
             if not parts: continue
             if parts[0] == 'ANDROID': peer.cc_test_android(1,int(parts[1]),int(parts[2])); print('OK',flush=True); continue
+            if parts[0] == 'INSTALL': peer.cc_test_install_policy(int(parts[1])); print('OK',flush=True); continue
             if parts[0] == 'POLICY': peer.cc_test_policy(int(parts[1])); print('OK',flush=True); continue
             if parts[0] == 'DECIDE':
                 peer.cc_test_decide(int(parts[1]),int(parts[2])); peer.cc_files_tick(100); print('OK',flush=True); continue

@@ -33,6 +33,7 @@ sealed interface Route : NavKey {
     @Serializable data object Main : Route
     @Serializable data object Files : Route
     @Serializable data object Terminal : Route
+    @Serializable data object PackageInstall : Route
     @Serializable data object SpeedTest : Route
     @Serializable data object Settings : Route
     @Serializable data object Theme : Route
@@ -46,7 +47,7 @@ fun ShellApp(settings: AppSettings, devices: List<SavedDevice>, update: ((AppSet
     protocol:SessionState,protocolCheck:Boolean?,onCheck:()->Unit,onDisconnect:()->Unit,bluetooth:BluetoothState=BluetoothState(),onScan:()->Unit={},onConnect:(String)->Unit={},onDeveloper:()->Unit={},
     browser:FileBrowserState=FileBrowserState(),onRefreshFiles:()->Unit={},onParent:()->Unit={},onMore:()->Unit={},onEntry:(RemoteEntry)->Unit={},
     terminal:TerminalState=TerminalState(),onTerminalStart:()->Unit={},onTerminalStop:()->Unit={},onTerminalSend:(String)->Unit={},onTerminalInterrupt:()->Unit={},onTerminalClear:()->Unit={},onTerminalVisible:(Boolean)->Unit={},
-    speedTest:SpeedTestState=SpeedTestState(),onSpeedStart:()->Unit={},onSpeedStop:()->Unit={}) {
+    speedTest:SpeedTestState=SpeedTestState(),onSpeedStart:()->Unit={},onSpeedStop:()->Unit={},packageInstall:PackageInstallState=PackageInstallState(),onPackageChoose:()->Unit={},onPackageAsk:()->Unit={},onPackageConfirm:()->Unit={},onPackageCancel:()->Unit={},onPackageStop:()->Unit={}) {
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     var resumed by remember {mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))}
     DisposableEffect(lifecycle) {
@@ -88,12 +89,12 @@ fun ShellApp(settings: AppSettings, devices: List<SavedDevice>, update: ((AppSet
                         if(settings.useMiuix) when(index) {
                             0 -> MiuixHome(deviceName,connectionStatus,openConnection,openSettings,openFiles,openTerminal)
                             1 -> MiuixConnection(bluetooth,onScan,onConnect,protocol,onDisconnect,openProtocol,openSettings)
-                            2 -> MiuixFunctions(openFiles,openTerminal)
+                            2 -> MiuixFunctions(openFiles,openTerminal,{navigate(Route.PackageInstall)})
                             else -> MiuixProfile(openSettings,openProtocol,openAbout)
                         } else when(index) {
                             0 -> Md3Home(deviceName,connectionStatus,openConnection,openSettings,openFiles,openTerminal)
                             1 -> Md3Connection(bluetooth,onScan,onConnect,protocol,onDisconnect,openProtocol,openSettings)
-                            2 -> Md3Functions(openFiles,openTerminal)
+                            2 -> Md3Functions(openFiles,openTerminal,{navigate(Route.PackageInstall)})
                             else -> Md3Profile(openSettings,openProtocol,openAbout)
                         }
                     }
@@ -119,6 +120,10 @@ fun ShellApp(settings: AppSettings, devices: List<SavedDevice>, update: ((AppSet
         entry<Route.SpeedTest> {
             if(settings.useMiuix) MiuixSpeedTest(speedTest,protocol,onSpeedStart,onSpeedStop,openConnection,back)
             else Md3SpeedTest(speedTest,protocol,onSpeedStart,onSpeedStop,openConnection,back)
+        }
+        entry<Route.PackageInstall> {
+            if(settings.useMiuix)MiuixPackageInstall(packageInstall,protocol.phase==SessionPhase.CONNECTED,onPackageChoose,onPackageAsk,onPackageConfirm,onPackageCancel,onPackageStop,openConnection,back)
+            else Md3PackageInstall(packageInstall,protocol.phase==SessionPhase.CONNECTED,onPackageChoose,onPackageAsk,onPackageConfirm,onPackageCancel,onPackageStop,openConnection,back)
         }
         entry<Route.Settings> {
             if(settings.useMiuix) MiuixSettings(settings,back,{navigate(Route.Theme)},{navigate(Route.About)},{navigate(Route.Protocol)},{navigate(Route.SpeedTest)})

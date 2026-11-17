@@ -1,6 +1,10 @@
 package com.chaosconnect.app.ui
 
 import android.app.Application
+import android.net.Uri
+import java.io.File
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ensureActive
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.chaosconnect.app.ChaosApplication
@@ -50,6 +54,47 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun stopSpeedTest(){++speedGeneration;speedJob?.cancel();speedJob=null;speedMutable.update{it.copy(running=false,message=if(it.running)"测速已停止" else it.message)}}
     private fun resetSpeedTest(){stopSpeedTest();speedMutable.value=SpeedTestState()}
+    private val packageMutable=MutableStateFlow(PackageInstallState())
+    val packageInstall=packageMutable.asStateFlow()
+    private var delivery:DeliveryPackage?=null
+    private var packageJob:Job?=null
+    @Volatile private var packageEpoch=0
+    fun selectPackage(uri:Uri){
+        if(packageMutable.value.busy)return
+        val epoch=++packageEpoch;packageMutable.value=PackageInstallState(busy=true,message="正在读取并检查投递包…")
+        packageJob=viewModelScope.launch {
+            var cached:File?=null
+            try{
+                val pack=withContext(Dispatchers.IO){
+                    val dir=File(app.cacheDir,"delivery").apply{mkdirs()};val target=File.createTempFile("delivery-",".bin",dir);cached=target
+                    app.contentResolver.openInputStream(uri)?.use{input->target.outputStream().use{output->
+                        val buffer=ByteArray(65536);var size=0L
+                        while(true){ensureActive();val n=input.read(buffer);if(n<0)break;if(n==0)continue;size+=n;checkWire(size<=DeliveryPackageReader.MAX_CONTAINER,"投递包超过48MiB");output.write(buffer,0,n)}
+                    }} ?: throw ProtocolException("无法打开选择的文件")
+                    DeliveryPackageReader.parse(target)
+                }
+                delivery?.source?.delete();delivery=pack
+                packageMutable.value=PackageInstallState(name=pack.name,kind=if(pack.kind==1)"字体包" else "图标包",files=pack.entries.size,total=pack.total,message="投递包检查通过")
+            }catch(e:CancellationException){cached?.delete();throw e}
+            catch(e:Exception){cached?.delete();if(epoch==packageEpoch)packageMutable.value=PackageInstallState(message=e.message ?: "读取投递包失败")}
+        }
+    }
+    fun askPackageInstall(){if(!packageMutable.value.busy&&delivery!=null)packageMutable.update{it.copy(confirming=true)}}
+    fun dismissPackageInstall(){packageMutable.update{it.copy(confirming=false)}}
+    fun stopPackageInstall(){++packageEpoch;packageJob?.cancel();packageJob=null;packageMutable.update{it.copy(busy=false,confirming=false,message=if(it.busy)"已取消安装，未提交的资源会被清理" else it.message)}}
+    fun installPackage(){
+        if(!packageMutable.value.confirming||packageMutable.value.busy)return
+        val pack=delivery ?: return;val active=session ?: return
+        if(active.state.value.phase!=SessionPhase.CONNECTED){packageMutable.update{it.copy(confirming=false,message="请先连接并在手环确认")};return}
+        stopSpeedTest();val epoch=++packageEpoch
+        packageMutable.update{it.copy(confirming=false,busy=true,done=0,message="正在请求手环安装权限…")}
+        packageJob=viewModelScope.launch(Dispatchers.IO){
+            try{ChaosPackageInstaller(active).install(pack){progress->if(epoch==packageEpoch)packageMutable.update{it.copy(done=progress.done,message=when(progress.state){1->"请在手环确认安装投递包：${pack.name}";6->"安装完成，可在Chaos中选择${pack.name}";else->"正在安装投递包…"})}}
+                if(epoch==packageEpoch)packageMutable.update{it.copy(busy=false)}
+            }catch(e:CancellationException){throw e}
+            catch(e:Exception){if(epoch==packageEpoch)packageMutable.update{it.copy(busy=false,message=e.message ?: "安装失败，请核对手环清单")}}
+        }
+    }
     private var session:ChaosSession?=null
     private var sessionObserver:Job?=null
     var files:ChaosFiles?=null
@@ -94,7 +139,7 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     fun bluetoothPermissionDenied(){bluetooth.permissionDenied()}
     fun connectBluetooth(address:String){
         if(bluetooth.state.value.connecting)return
-        resetSpeedTest();terminalController.bind(null);resetBrowser();sessionObserver?.cancel();session?.close();session=null;files=null
+        stopPackageInstall();resetSpeedTest();terminalController.bind(null);resetBrowser();sessionObserver?.cancel();session?.close();session=null;files=null
         protocolMutable.value=SessionState()
         bluetooth.connect(address)
     }
@@ -108,11 +153,12 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     fun update(edit: (AppSettings) -> AppSettings) { edits.trySend(edit) }
     /** A real secure Bluetooth or authenticated host carrier; no mock peer is installed. */
     fun attachAuthenticatedTransport(transport:ChaosTransport,peer:BluetoothPeer?=null) {
-        resetSpeedTest();resetBrowser();sessionObserver?.cancel();session?.close();files=null
+        stopPackageInstall();resetSpeedTest();resetBrowser();sessionObserver?.cancel();session?.close();files=null
         val active=ChaosSession(transport,viewModelScope);session=active;terminalController.bind(active)
         var catalogSaved=false
         sessionObserver=viewModelScope.launch {active.state.collect {state -> if(session===active) {
             protocolMutable.value=state
+            if(state.phase!=SessionPhase.CONNECTED && packageInstall.value.busy)stopPackageInstall()
             if(state.phase!=SessionPhase.CONNECTED && speedTest.value.running)stopSpeedTest()
             if(terminal.value.active && (state.phase!=SessionPhase.CONNECTED || state.access?.allows(MobilePermission.NSH)!=true))terminalController.revoke()
             if(state.phase==SessionPhase.DISCONNECTED || state.phase==SessionPhase.AWAITING_APPROVAL){files=null;resetBrowser()}
@@ -128,6 +174,6 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun checkProtocol() {checkMutable.value=CcnCodec.selfCheck()}
-    fun disconnectProtocol() {resetSpeedTest();terminalController.bind(null);resetBrowser();bluetooth.cancelConnection();session?.close();files=null}
-    override fun onCleared() {stopSpeedTest();terminalController.bind(null);bluetooth.close();session?.close();super.onCleared()}
+    fun disconnectProtocol() {stopPackageInstall();resetSpeedTest();terminalController.bind(null);resetBrowser();bluetooth.cancelConnection();session?.close();files=null}
+    override fun onCleared() {stopPackageInstall();delivery?.source?.delete();stopSpeedTest();terminalController.bind(null);bluetooth.close();session?.close();super.onCleared()}
 }
