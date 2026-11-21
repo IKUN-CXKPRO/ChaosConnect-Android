@@ -24,9 +24,9 @@ object DeliveryPackageReader {
         fun bytes(at:Long,n:Int):ByteArray {checkWire(at>=0&&n>=0&&at+n<=length,"投递包记录越界");return ByteArray(n).also{f.seek(at);f.readFully(it)}}
         fun u32(at:Long):Long {val b=bytes(at,4);return (b[0].toLong() and 255) or ((b[1].toLong() and 255) shl 8) or ((b[2].toLong() and 255) shl 16) or ((b[3].toLong() and 255) shl 24)}
         fun expect(at:Long,value:Long){checkWire(u32(at)==value,"投递包结构不匹配（${at.toString(16)}）")}
-        expect(0,0x1234a55a);expect(4,0x10000);expect(0x10,0x800);expect(0x14,0x10000);expect(0x1c,1)
+        expect(0,0x1234a55a);val version=u32(4);checkWire(version==0x10000L||version==0x10107L,"投递包容器版本不支持");expect(0x10,0x800);expect(0x14,0x10000);expect(0x1c,1)
         val pkg=bytes(0x28,12).toString(Charsets.US_ASCII);checkWire(pkg.matches(Regex("[0-9]{12}"))&&pkg!="979820260926","不是独立资源投递包")
-        val count=u32(0xd8);checkWire(count==4L,"只支持制作台输出的字体和图标投递包")
+        val count=u32(0xd8);checkWire(count==4L||count==2L,"只支持制作台输出的字体和图标投递包")
         val end=0x148+16*(count+2);expect(0x20,end);expect(0xa8,0x80000000);expect(0xac,end);expect(0xb0,1);expect(0xb4,0x148)
         repeat(9){i->val at=0xb8L+i*8;expect(at,if(at==0xd8L)count else 0);expect(at+4,if(i<5)0x158 else end-16)}
         expect(0x148,0);expect(0x14c,0);expect(0x150,end-16);expect(0x154,16)
@@ -34,7 +34,7 @@ object DeliveryPackageReader {
         expect(end,0x410);var pos=end+12+u32(end+8);checkWire(pos<=length,"预览数据越界")
         data class Slot(val path:String,val at:Long,val size:Int)
         val slots=mutableListOf<Slot>()
-        repeat(4){i->val at=0x158L+i*16;expect(at,0x05000000L+i);expect(at+4,0)
+        repeat(count.toInt()){i->val at=0x158L+i*16;expect(at,0x05000000L+i);expect(at+4,0)
             val off=u32(at+8);val size=u32(at+12);checkWire(off==pos&&size>=21&&off+size<=length,"投递包文件区不连续或越界")
             val h=u32(off);val pathSize=(h ushr 24).toInt();val dataSize=(h and 0xffffff).toInt()
             checkWire(pathSize>0&&size==20L+pathSize+dataSize,"文件长度与记录不一致")
@@ -43,16 +43,23 @@ object DeliveryPackageReader {
             slots+=Slot(pathBytes.toString(Charsets.US_ASCII),off+20+pathSize,dataSize);pos+=size
         }
         checkWire(pos==length,"投递包尾部有多余内容")
-        val kind=when(slots[0].path){"_lua/fontpack/main.lua"->1;"_lua/iconpack/main.lua"->2;else->throw ProtocolException("不是字体或图标投递包")}
-        val root=if(kind==1)"_lua/fontpack/" else "_lua/iconpack/"
-        checkWire(slots.map{it.path}==listOf(root+"main.lua",root+"chaos_sup.ko",root+"chaos_icon.bin",root+if(kind==1)"font.ttf" else "pack.bin"),"投递包槽位不匹配")
+        val kind:Int
+        if(count==2L){
+            checkWire(version==0x10107L&&slots.map{it.path}==listOf("_lua/xiaomi-band-10-pro/main.lua","_lua/xiaomi-band-10-pro/pack.bin"),"新版图标投递包槽位不匹配")
+            kind=2
+        }else{
+            checkWire(version==0x10000L,"旧版投递包容器版本无效")
+            kind=when(slots[0].path){"_lua/fontpack/main.lua"->1;"_lua/iconpack/main.lua"->2;else->throw ProtocolException("不是字体或图标投递包")}
+            val root=if(kind==1)"_lua/fontpack/" else "_lua/iconpack/"
+            checkWire(slots.map{it.path}==listOf(root+"main.lua",root+"chaos_sup.ko",root+"chaos_icon.bin",root+if(kind==1)"font.ttf" else "pack.bin"),"投递包槽位不匹配")
+        }
         checkWire(slots[0].size in 1..262144,"投递包元数据过大")
         val lua=utf8(bytes(slots[0].at,slots[0].size));val key=if(kind==1)"FONT_NAME" else "PACK_NAME"
         val matches=Regex("(?m)^\\s*local\\s+$key\\s*=\\s*\"((?:[^\"\\\\\\r\\n]|\\\\.)*)\"[ \\t]*(?:--[^\\r\\n]*)?$").findAll(lua).toList()
         checkWire(matches.size==1,"投递包名称缺失或不明确")
         val literal=matches.single().groupValues[1];val name=buildString {var i=0;while(i<literal.length){val c=literal[i++];if(c=='\\'){checkWire(i<literal.length&&literal[i] in listOf('\\','"'),"投递包名称转义无效");append(literal[i++])}else append(c)}}
         checkWire(validName(name,kind),"投递包名称无效或未替换")
-        val payload=slots[3];val entries=mutableListOf<DeliveryEntry>();var total=0L
+        val payload=slots.last();val entries=mutableListOf<DeliveryEntry>();var total=0L
         fun entry(name:String,at:Long,n:Int){checkWire(n>0&&at+n<=payload.at+payload.size,"资源文件长度无效");val crc=CRC32();var done=0;while(done<n){val b=bytes(at+done,minOf(65536,n-done));crc.update(b);done+=b.size};entries+=DeliveryEntry(name,at,n,crc.value);total+=n}
         if(kind==1){
             checkWire(payload.size>=12,"字体文件头缺失")

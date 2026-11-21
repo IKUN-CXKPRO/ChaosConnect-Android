@@ -17,7 +17,7 @@
 
 CCN1 的帧、Protobuf 承载、会话、权限、文件操作及窗口传输已实现，并与模块生产 C 代码完成互通测试。参见 [协议接入说明](docs/CHAOSCONNECT.md)。
 
-已接入 **Android公开RFCOMM接口 + 手环专用SPP服务**，不依赖小米私有认证载波。连接页支持附近设备权限、普通蓝牙搜索／系统配对和专用UUID连接。手环确认本次连接后才建立可操作的CCN1会话、保存真实设备；默认仅授予读取文件，写入、删除／重命名、开发者模式在手环单独设置，设备控制位为后续功能预留。
+已接入 **Android公开RFCOMM接口 + 手环专用SPP服务**，不依赖小米私有认证载波。连接页支持附近设备权限、普通蓝牙搜索／系统配对和专用UUID连接。手环确认本次连接后才建立可操作的CCN1会话、保存真实设备；默认仅授予读取文件，写入、删除／重命名、开发者模式在手环单独设置，设备控制可管理手环端Chaos设置，连接与权限设置仍只能在手环修改。
 
 使用：手环 ChaosConnect → 发起蓝牙配对；手机连接页 → 搜索手环 → 系统配对 → 手环允许本次连接。手机也可在系统蓝牙设置保持可见，让手环扫描并点选后发起配对。
 
@@ -119,3 +119,19 @@ Logo 按用户授权复制：
 ## 0.6.0 投递包安装
 
 功能列表顶部新增“安装投递包”，选择制作台导出的字体／图标 `.bin`，手机确认并通过手环独立安装授权后提取安装。使用最终清单名称、CRC校验与暂存提交，不执行包内Lua、不替换模块。详见 [安装说明](docs/DELIVERY-INSTALL.md)。APK 保持默认 `app/build/outputs/apk/debug/app-debug.apk`。
+
+
+功能列表新增“手环端Chaos设置”和“投递包制作”。手环设置要求更新模块并在手环
+ChaosConnect → 权限设置 → Android端开启“设备控制”。目录与权限协议见
+[手环设置协议](docs/CHAOSCONNECT-SETTINGS.md)。
+
+投递包制作已将 `chaos-bandpack` 的 10 Pro 工作区作为 `bandpack` 库内置，支持字体解析／
+子集化、静态和 GIF/DGF1 动态图标、系统图标、日历预览、旧 BIN 编辑及工程导入导出。
+支持文件管理器打开／分享素材；9 Pro 制作不纳入本次功能。
+导出 BIN 后，可在“安装投递包”中选择安装。安装器同时识别旧版四资源包及新版两资源图标包。
+
+构建前先在相邻 `Chaos-Module` 运行 `python3 tools/build.py`，制作器会同步
+`dist/10p-3.101.043` 中的模块、应用图标和字体 Lua。也可用 Gradle
+`-Pchaos.repo=/path/to/Chaos-Module` 指定目录。APK 路径保持
+`app/build/outputs/apk/debug/app-debug.apk`。制作器来源、修改与许可见
+[移植记录](bandpack/SOURCE.json)和[第三方声明](THIRD_PARTY_NOTICES.md)。

@@ -95,6 +95,10 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
             catch(e:Exception){if(epoch==packageEpoch)packageMutable.update{it.copy(busy=false,message=e.message ?: "安装失败，请核对手环清单")}}
         }
     }
+    private val bandController=BandSettingsController(viewModelScope)
+    val bandSettings=bandController.state
+    fun loadBandSettings(){stopSpeedTest();bandController.load()}
+    fun writeBandSetting(setting:BandSetting,value:String){stopSpeedTest();bandController.write(setting,value)}
     private var session:ChaosSession?=null
     private var sessionObserver:Job?=null
     var files:ChaosFiles?=null
@@ -139,7 +143,7 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     fun bluetoothPermissionDenied(){bluetooth.permissionDenied()}
     fun connectBluetooth(address:String){
         if(bluetooth.state.value.connecting)return
-        stopPackageInstall();resetSpeedTest();terminalController.bind(null);resetBrowser();sessionObserver?.cancel();session?.close();session=null;files=null
+        stopPackageInstall();resetSpeedTest();terminalController.bind(null);bandController.bind(null);resetBrowser();sessionObserver?.cancel();session?.close();session=null;files=null
         protocolMutable.value=SessionState()
         bluetooth.connect(address)
     }
@@ -154,10 +158,11 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
     /** A real secure Bluetooth or authenticated host carrier; no mock peer is installed. */
     fun attachAuthenticatedTransport(transport:ChaosTransport,peer:BluetoothPeer?=null) {
         stopPackageInstall();resetSpeedTest();resetBrowser();sessionObserver?.cancel();session?.close();files=null
-        val active=ChaosSession(transport,viewModelScope);session=active;terminalController.bind(active)
+        val active=ChaosSession(transport,viewModelScope);session=active;terminalController.bind(active);bandController.bind(active)
         var catalogSaved=false
         sessionObserver=viewModelScope.launch {active.state.collect {state -> if(session===active) {
             protocolMutable.value=state
+            if(state.phase!=SessionPhase.CONNECTED||state.access?.allows(MobilePermission.CONTROL)!=true){if(bandSettings.value.items.isNotEmpty()||bandSettings.value.busy)bandController.revoke()}
             if(state.phase!=SessionPhase.CONNECTED && packageInstall.value.busy)stopPackageInstall()
             if(state.phase!=SessionPhase.CONNECTED && speedTest.value.running)stopSpeedTest()
             if(terminal.value.active && (state.phase!=SessionPhase.CONNECTED || state.access?.allows(MobilePermission.NSH)!=true))terminalController.revoke()
@@ -174,6 +179,6 @@ class ShellViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun checkProtocol() {checkMutable.value=CcnCodec.selfCheck()}
-    fun disconnectProtocol() {stopPackageInstall();resetSpeedTest();terminalController.bind(null);resetBrowser();bluetooth.cancelConnection();session?.close();files=null}
-    override fun onCleared() {stopPackageInstall();delivery?.source?.delete();stopSpeedTest();terminalController.bind(null);bluetooth.close();session?.close();super.onCleared()}
+    fun disconnectProtocol() {stopPackageInstall();resetSpeedTest();terminalController.bind(null);bandController.bind(null);resetBrowser();bluetooth.cancelConnection();session?.close();files=null}
+    override fun onCleared() {stopPackageInstall();delivery?.source?.delete();stopSpeedTest();terminalController.bind(null);bandController.bind(null);bluetooth.close();session?.close();super.onCleared()}
 }

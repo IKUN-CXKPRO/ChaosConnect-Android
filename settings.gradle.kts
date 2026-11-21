@@ -7,3 +7,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "ChaosConnect"
 include(":app")
+
+include(":bandpack")

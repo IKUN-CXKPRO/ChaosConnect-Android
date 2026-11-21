@@ -9,6 +9,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 
 object Op {
+    const val SETTINGS_LIST=0x70;const val SETTINGS_WRITE=0x71;const val SETTINGS_RESULT=0x72
     const val HELLO=1;const val LIST=2;const val STAT=3;const val MKDIR=4;const val REMOVE=5
     const val RMDIR=6;const val RENAME=7;const val COPY=8
     const val OPEN_READ=0x10;const val READ=0x11;const val CLOSE_READ=0x12
@@ -36,10 +37,11 @@ object MobilePermission {
         Op.REMOVE,Op.RMDIR,Op.RENAME->MANAGE
         Op.COPY->READ or WRITE
         Op.NSH_OPEN,Op.NSH_WRITE,Op.NSH_READ,Op.NSH_CLOSE->NSH
+        Op.SETTINGS_LIST,Op.SETTINGS_WRITE,Op.SETTINGS_RESULT->CONTROL
         Op.SET_DEV->if(payload.firstOrNull()==1.toByte())DEVELOPER else 0
         else->0
     }
-    fun labels(mask:Long):String=listOf(READ to "读取文件",WRITE to "写入文件",MANAGE to "删除和重命名",DEVELOPER to "开发者模式",CONTROL to "设备控制（预留）",NSH to "NSH终端")
+    fun labels(mask:Long):String=listOf(READ to "读取文件",WRITE to "写入文件",MANAGE to "删除和重命名",DEVELOPER to "开发者模式",CONTROL to "设备控制",NSH to "NSH终端")
         .filter {mask and it.first.toLong()!=0L}.joinToString("、") {it.second}.ifEmpty {"无文件或控制权限"}
 }
 data class AndroidAccess(val android:Boolean,val connectionPolicy:Int,val authorization:Int,val permissions:Long,val token:Long,val granted:Boolean) {
@@ -145,7 +147,7 @@ class ChaosSession(private val transport:ChaosTransport,parentScope:CoroutineSco
                         sendLock.withLock {
                             synchronized(lock) {
                                 checkWire(!closed && started,"CCN1 尚未连接")
-                                val polling=opcode in listOf(Op.ECHO,Op.PING,Op.GET_ACCESS)
+                                val polling=opcode in listOf(Op.ECHO,Op.PING,Op.GET_ACCESS,Op.SETTINGS_RESULT)
                                 checkWire(polling || nextId<65528,"请求编号已用尽，请重新建立会话")
                                 checkWire(state.value.phase==SessionPhase.CONNECTED || opcode in listOf(Op.HELLO,Op.PING,Op.GET_ACCESS,Op.DISCONNECT),"尚未完成握手")
                                 checkWire(state.value.permission?.waiting!=true || opcode in listOf(Op.PING,Op.SET_DEV,Op.GET_DEV,Op.GET_ACCESS,Op.DISCONNECT),"请先在手环完成授权或取消")

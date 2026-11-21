@@ -27,3 +27,13 @@ The ported drag animation and gesture code also credits KernelSU contributors.
 Liquid helpers credit compose-miuix-ui contributors and Kyant0/AndroidLiquidGlass.
 See each file under ui/port for the original license and attribution headers.
 The source manifest is docs/installerx-port.json.
+
+## Chaos 投递包制作
+
+`bandpack/` 移植自 [chaos-bandpack](https://github.com/WenHuaYiYang/chaos-bandpack)，
+源版本和文件摘要见 `bandpack/SOURCE.json`，按 AGPL-3.0 提供；许可全文保存在
+`bandpack/LICENSE`，也随 APK 内置，并可在制作页的开源许可中查看。
+本次改动包括库模块接入、宿主导航及限定 10 Pro 制作目标。原有版权和第三方许可保留。
+主项目原有 GPL-3.0 部分仍保留原许可；与该 AGPL 模块组合发布时须遵守其对应义务。
+字体、MingCute 图标等各自的声明保存在 `bandpack/THIRD_PARTY_NOTICES.md` 和
+`bandpack/third_party/` 中。

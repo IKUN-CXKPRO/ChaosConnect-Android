@@ -295,7 +295,7 @@ fun MiuixAbout(back: () -> Unit) {
             Logo(Modifier.size(104.dp));Label("ChaosConnect",28,bold=true);Label("CONNECT YOUR CHAOS.",12,muted=true);Label("${com.chaosconnect.app.BuildConfig.VERSION_NAME} · 预览版",13,muted=true)
         }
         Panel {Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Label("为连接而生",20,bold=true);Label("Chaos 生态的全新设备入口。这个版本从一个简单、流畅、可定制的空间开始。",14,muted=true)}}
-        Panel {Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Label("开源组件",16,bold=true);Label("Jetpack Compose · Material 3 · Miuix\nAndroidX Room · DataStore\nMiuix 使用 Apache License 2.0\n界面组件移植自 InstallerX Revived（GPL-3.0）",13,muted=true)}}
+        Panel {Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Label("开源组件",16,bold=true);Label("Jetpack Compose · Material 3 · Miuix\nAndroidX Room · DataStore\nMiuix 使用 Apache License 2.0\n界面组件移植自 InstallerX Revived（GPL-3.0）\n投递包制作来自 chaos-bandpack（AGPL-3.0），完整许可见制作页 → 设置 → 开源许可",13,muted=true)}}
     }
 }
 
@@ -331,10 +331,12 @@ private fun QuickFeature(title:String,summary:String,icon:Glyph,tag:String,modif
     }
 }
 @Composable
-fun MiuixFunctions(onFiles:()->Unit,onTerminal:()->Unit,onPackage:()->Unit={}) {
+fun MiuixFunctions(onFiles:()->Unit,onTerminal:()->Unit,onPackage:()->Unit={},onBandSettings:()->Unit={},onStudio:()->Unit={}) {
     Page("功能列表","FUNCTIONS") {
         Panel {
             Menu("安装投递包","选择制作台输出的字体／图标 .bin",Glyph.PLUS,"functions_package",onPackage)
+            Menu("投递包制作","字体、图标、动态图标与工程制作",Glyph.PLUS,"functions_studio",onStudio)
+            Menu("手环端Chaos设置","管理手环设置、系统美化与工具",Glyph.PLUS,"functions_band_settings",onBandSettings)
             Menu("文件管理","浏览目录与查看文件",Glyph.FILES,"functions_files",onFiles)
             Menu("NSH终端","连接手环原生终端",Glyph.TERMINAL,"functions_terminal",onTerminal)
         }
@@ -360,4 +362,9 @@ fun MiuixSpeedTest(state:com.chaosconnect.app.ui.SpeedTestState,protocol:Session
 @Composable
 fun MiuixPackageInstall(state:com.chaosconnect.app.ui.PackageInstallState,connected:Boolean,onChoose:()->Unit,onInstall:()->Unit,onConfirm:()->Unit,onCancel:()->Unit,onStop:()->Unit,onConnect:()->Unit,back:()->Unit){
     Page("安装投递包","DELIVERY PACKAGE",back){PackageInstallContent(state,connected,onChoose,onInstall,onConfirm,onCancel,onStop,onConnect)}
+}
+
+@Composable
+fun MiuixBandSettings(state:com.chaosconnect.app.ui.BandSettingsState,protocol:SessionState,onRefresh:()->Unit,onWrite:(BandSetting,String)->Unit,onConnect:()->Unit,back:()->Unit) {
+    Page("手环端Chaos设置","",back) { BandSettingsContent(state,protocol,onRefresh,onWrite,onConnect,true) }
 }

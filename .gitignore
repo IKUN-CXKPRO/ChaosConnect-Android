@@ -5,3 +5,9 @@
 local.properties
 *.iml
 .DS_Store
+
+# Generated maker assets, refreshed from the firmware module at build time.
+bandpack/src/main/assets/pack/
+bandpack/src/main/assets/pack_n67/
+bandpack/src/main/assets/legal/
+bandpack/src/main/assets/stock_icons/

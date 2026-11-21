@@ -1,0 +1,76 @@
+package com.chaos.bandpack.data
+
+import android.content.Context
+import com.chaos.bandpack.data.icon.IconSpec
+import com.chaos.bandpack.data.pack.PackAssets
+import com.chaos.bandpack.data.pack.ShellWriter
+
+/**
+ * 从 APK 的 assets 里读打包素材。文件由构建期的 syncPackAssets 任务从仓库同步进来,
+ * 名字固定(见 app/build.gradle.kts)。
+ */
+object Assets {
+
+    private const val DIR = "pack"
+
+    /**
+     * 9 Pro 移植版这一号的版本号。设备侧产物换了就得跟着改: 导出文件名与界面提示
+     * 都取这里, 之前三处各写一遍 v2.1, 换版时漏了一处就会让用户拿到名字对不上的主包。
+     */
+    const val NINE_BUILD = "作者配套版"
+    val NINE_INSTALLER_NAME = "Chaos-9Pro-3.1.187-author-bundle.bin"
+    val NINE_HINT = "先安装 9 Pro Chaos $NINE_BUILD；投递包导入到空槽位。仅适配 3.1.187，尚无真机验证。"
+
+    fun nineImporter(context: Context): String = context.assets.open("pack_n67/importer.lua.in").use { it.readBytes().toString(Charsets.UTF_8) }
+    fun nineInstaller(context: Context): ByteArray = context.assets.open("pack_n67/installer.bin").use { it.readBytes() }
+    fun iconLua(context: Context): String = context.assets.open("$DIR/icon_pack.lua").use { it.readBytes().toString(Charsets.UTF_8) }
+
+    fun pack(context: Context): PackAssets = context.assets.let { a ->
+        PackAssets(
+            ko = a.open("$DIR/chaos_sup.ko").use { it.readBytes() },
+            iconBin = a.open("$DIR/chaos_icon.bin").use { it.readBytes() },
+            fontLua = a.open("$DIR/font_pack.lua").use { String(it.readBytes(), Charsets.UTF_8) },
+            iconLua = a.open("$DIR/icon_pack.lua").use { String(it.readBytes(), Charsets.UTF_8) },
+        )
+    }
+
+    /**
+     * 系统原图标预览: assets/stock_icons/<stem>.png。
+     *
+     * 这些图是从固件资源包里解出来的, **没有可再分发的授权**, 所以构建期是可选的
+     * (见 app/build.gradle.kts 的 stockIcons 开关): 公开仓库的构建里就是空的,
+     * 界面自动退成"未内置"。
+     */
+    fun stockIconNames(context: Context): Set<String> =
+        context.assets.list("stock_icons")?.toSet() ?: emptySet()
+
+    fun stockIcon(context: Context, stem: String): ByteArray? =
+        IconSpec.previewStems(stem).firstNotNullOfOrNull { name ->
+            runCatching { context.assets.open("stock_icons/$name.png").use { it.readBytes() } }.getOrNull()
+        }
+
+    /**
+     * 设置页"关于"要显示的真实数字。主包包号是编译期常量(见 [ShellWriter.MAIN_PKG]),
+     * 哈希由构建期的校验任务跟本地主包对齐。
+     *
+     * [stockIcons] 只数**对得上槽位**的那些: 素材目录里可能留着设备上已不存在的应用的图
+     * (例如 `dealt.png`), 直接拿文件数除以槽位数会算出 36/35 这种不可能的比值。
+     */
+    class About(
+        val mainPkg: String,
+        val koBytes: Int,
+        val iconBytes: Int,
+        val stockIcons: Int,
+    )
+
+    fun about(context: Context): About? = runCatching {
+        val a = context.assets
+        val names = stockIconNames(context)
+        About(
+            mainPkg = ShellWriter.MAIN_PKG,
+            koBytes = a.open("$DIR/chaos_sup.ko").use { it.readBytes().size },
+            iconBytes = a.open("$DIR/chaos_icon.bin").use { it.readBytes().size },
+            stockIcons = IconSpec.SLOTS.count { slot -> IconSpec.previewStems(slot.stem).any { "$it.png" in names } },
+        )
+    }.getOrNull()
+}
