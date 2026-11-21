@@ -9,7 +9,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 
 object Op {
-    const val SETTINGS_LIST=0x70;const val SETTINGS_WRITE=0x71;const val SETTINGS_RESULT=0x72
+    const val SETTINGS_LIST=0x70;const val SETTINGS_WRITE=0x71;const val SETTINGS_RESULT=0x72;const val SETTINGS_APPLY=0x73
     const val HELLO=1;const val LIST=2;const val STAT=3;const val MKDIR=4;const val REMOVE=5
     const val RMDIR=6;const val RENAME=7;const val COPY=8
     const val OPEN_READ=0x10;const val READ=0x11;const val CLOSE_READ=0x12
@@ -37,7 +37,7 @@ object MobilePermission {
         Op.REMOVE,Op.RMDIR,Op.RENAME->MANAGE
         Op.COPY->READ or WRITE
         Op.NSH_OPEN,Op.NSH_WRITE,Op.NSH_READ,Op.NSH_CLOSE->NSH
-        Op.SETTINGS_LIST,Op.SETTINGS_WRITE,Op.SETTINGS_RESULT->CONTROL
+        Op.SETTINGS_LIST,Op.SETTINGS_WRITE,Op.SETTINGS_RESULT,Op.SETTINGS_APPLY->CONTROL
         Op.SET_DEV->if(payload.firstOrNull()==1.toByte())DEVELOPER else 0
         else->0
     }

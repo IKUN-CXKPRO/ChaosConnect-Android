@@ -23,10 +23,18 @@ class BandSettingsController(private val scope:CoroutineScope) {
         val settings=client?:return;val epoch=generation
         mutable.update{it.copy(busy=true,message=if(setting==null)"正在读取手环设置…" else "正在修改${setting.label}…")}
         job=scope.launch(Dispatchers.IO){try{
-            if(setting!=null)settings.write(setting,value!!)
-            // Re-read all settings: changing a mode may update other switches.
-            val items=settings.load()
-            if(epoch==generation)mutable.value=BandSettingsState(items,loaded=true,message=if(setting==null)"已读取手环设置" else if(setting.id==150)"字体切换已提交，退出手环Chaos后生效" else "设置已提交到手环；延后操作会继续在手环执行")
+            if(setting==null){
+                val items=settings.load {partial,total->if(epoch==generation)mutable.update{it.copy(items=partial,message="正在读取手环设置：${partial.size}/$total")}}
+                if(epoch==generation)mutable.value=BandSettingsState(items,loaded=true,message="已读取手环设置")
+            }else{
+                val result=settings.apply(setting,value!!)
+                if(epoch==generation)mutable.update{it.copy(items=result.merge(it.items),busy=false,message=when{
+                    result.incomplete->"设置已生效；部分列表可通过刷新更新"
+                    setting.id==150->"字体切换已提交，退出手环Chaos后生效"
+                    setting.kind==4||setting.id in 152..153->"操作已提交，手环会继续执行"
+                    else->"已更新${setting.label}"
+                })}
+            }
         }catch(e:CancellationException){throw e}catch(e:Exception){if(epoch==generation)mutable.update{it.copy(busy=false,message=e.message?:"设置操作失败")}}}
     }
 }
